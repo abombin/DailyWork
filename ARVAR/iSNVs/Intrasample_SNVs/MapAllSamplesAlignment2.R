@@ -2,12 +2,12 @@ library(foreach)
 library(doParallel)
 library(phylotools)
 
-combStats = read.csv("ampseq_metaseq_overlap_combStats.csv")
+combStats = read.csv("ampseq_metaseq_overlap_combStats_2.csv")
 
-dir.create("Overlap_Pos_mapping/Comb_fasta/", recursive = T, showWarnings = F)
+dir.create("Overlap_Pos_mapping_2/Comb_fasta/", recursive = T, showWarnings = F)
 
 makeAlignment = function(combStats) {
-  #system("cat references/MN908947.3.fna > Overlap_Pos_mapping/Comb_fasta/allSequences.fasta")
+  system("cat references/MN908947.3.fna > Overlap_Pos_mapping_2/Comb_fasta/allSequences.fasta")
   seqType = character()
   seqNames = character()
   for ( i in 1:nrow(combStats) ) {
@@ -17,18 +17,18 @@ makeAlignment = function(combStats) {
     seqNames= c(seqNames, ampSample, metaSample)
     seqType = c(seqType, "ampseq", "metaseq")
     
-    catFile = "Overlap_Pos_mapping/Comb_fasta/allSequences.fasta"
-    ampPath = paste0("IntraSnv_ampseq_overlap/",  ampSample, "/reference.fa")
-    metaPath = paste0("IntraSnv_metaseq_overlap/",  metaSample, "/reference.fa")
+    catFile = "Overlap_Pos_mapping_2/Comb_fasta/allSequences.fasta"
+    ampPath = paste0("IntraSnv_ampseq_all/",  ampSample, "/reference.fa")
+    metaPath = paste0("IntraSnv_metaseq_all/",  metaSample, "/reference.fa")
     
     cmd_str = paste("cat ", ampPath, metaPath, ">>", catFile, sep = " ")
-    #system(cmd_str)
+    system(cmd_str)
   }
-  cmd_mafft = paste0("mafft --maxiterate 1000 --thread 29 --auto ",  catFile, " > Overlap_Pos_mapping/All_samples_align.fasta")
+  cmd_mafft = paste0("mafft --maxiterate 1000 --thread 70 --globalpair ",  catFile, " > Overlap_Pos_mapping_2/All_samples_align.fasta")
   system(cmd_mafft)
   
   combDat = data.frame(seqNames, seqType)
-  write.csv(combDat, "All_overlap_samples_alignment_order.csv", row.names = F)
+  write.csv(combDat, "All_overlap_samples_alignment_order_2.csv", row.names = F)
 }
 
 # run alignment function
@@ -67,8 +67,8 @@ checkIndex = function(combIndex, targVec, alignTargVec) {
 
 # 
 
-alignOrder = read.csv("All_overlap_samples_alignment_order.csv")
-alignFasta = read.fasta("Overlap_Pos_mapping/All_samples_align.fasta")
+alignOrder = read.csv("All_overlap_samples_alignment_order_2.csv")
+alignFasta = read.fasta("Overlap_Pos_mapping_2/All_samples_align.fasta")
 alignFasta = alignFasta[2:nrow(alignFasta),]
 alignFasta$seq.name = gsub(" MN908947.3", "", alignFasta$seq.name)
 identical(alignFasta$seq.name, alignOrder$seqNames)
@@ -94,15 +94,15 @@ compileIndex = function(i, makeCheck, alignFasta) {
   ampSample = ampAlignment[i,1]
   metaSample = metaAlignment[i,1]
   
-  outAmp = paste0("Overlap_Pos_mapping/AllSampAlign_Indecies/Ampseq/", ampSample, ".csv")
-  outMeta = paste0("Overlap_Pos_mapping/AllSampAlign_Indecies/Metaseq/", metaSample, ".csv")
+  outAmp = paste0("Overlap_Pos_mapping_2/AllSampAlign_Indecies/Ampseq/", ampSample, ".csv")
+  outMeta = paste0("Overlap_Pos_mapping_2/AllSampAlign_Indecies/Metaseq/", metaSample, ".csv")
   
   write.csv(ampIndex, outAmp, row.names = F)
   write.csv(metaIndex, outMeta, row.names = F)
   
   if (makeCheck==T) {
-    ampPath = paste0("IntraSnv_ampseq_overlap/",  ampSample, "/reference.fa")
-    metaPath = paste0("IntraSnv_metaseq_overlap/",  metaSample, "/reference.fa")
+    ampPath = paste0("IntraSnv_ampseq_all/",  ampSample, "/reference.fa")
+    metaPath = paste0("IntraSnv_metaseq_all/",  metaSample, "/reference.fa")
     
     ampFasta = phylotools::read.fasta(ampPath)
     metaFasta = phylotools::read.fasta(metaPath)
@@ -119,25 +119,25 @@ compileIndex = function(i, makeCheck, alignFasta) {
     checkLog = c(paste0("Ampseq sample ", ampSample, " failed rows ", length(checkAmp)), paste0("Metaseq sample ", metaSample, " failed rows ", length(checkMeta)))
     return(checkLog)
   }
-
+  
 }
 
-dir.create("Overlap_Pos_mapping/AllSampAlign_Indecies/Ampseq/", recursive = T, showWarnings = F)
-dir.create("Overlap_Pos_mapping/AllSampAlign_Indecies/Metaseq/",  recursive = T, showWarnings = F)
+dir.create("Overlap_Pos_mapping_2/AllSampAlign_Indecies/Ampseq/", recursive = T, showWarnings = F)
+dir.create("Overlap_Pos_mapping_2/AllSampAlign_Indecies/Metaseq/",  recursive = T, showWarnings = F)
 
-cl = makeCluster(14, type = "FORK")
+cl = makeCluster(70, type = "FORK")
 registerDoParallel(cl)
-combCompile = foreach(i=1:(nrow(alignFasta))/2)%dopar% {
+combCompile = foreach(i=1:(nrow(alignFasta)/2))%dopar% {
   compileIndex(i=i, makeCheck=T, alignFasta=alignFasta)
 }
 stopCluster(cl)
 
 combCompChar = unlist(combCompile)
 
-write.table(combCompChar, "Overlap_index_allSampAlign.log", row.names = F, col.names = F, quote = F)
+write.table(combCompChar, "Overlap_index_allSampAlign_2.log", row.names = F, col.names = F, quote = F)
 
-combCompile = character()
-for ( i in 1:nrow(alignFasta)) {
-  curCompile = compileIndex(i=i, makeCheck=T, alignFasta=alignFasta)
-  combCompile = c(combCompile, curCompile)
-}
+# combCompile = character()
+# for ( i in 1:nrow(alignFasta)) {
+#   curCompile = compileIndex(i=i, makeCheck=T, alignFasta=alignFasta)
+#   combCompile = c(combCompile, curCompile)
+# }

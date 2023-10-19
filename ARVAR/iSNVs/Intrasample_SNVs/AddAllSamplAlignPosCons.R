@@ -26,9 +26,9 @@ adjustPositions = function(df, protocol) {
   for (curName in sampleNames) {
     dfSub = df[df$OrigName == curName,]
     if (protocol=="ampseq") {
-      indPath = paste0("Overlap_Pos_mapping/Indecies/Ampseq/", curName, ".csv")
+      indPath = paste0("Overlap_Pos_mapping/AllSampAlign_Indecies/Ampseq/", curName, ".csv")
     } else if (protocol=="metaseq") {
-      indPath = paste0("Overlap_Pos_mapping/Indecies/Metaseq/", curName, ".csv")
+      indPath = paste0("Overlap_Pos_mapping/AllSampAlign_Indecies/Metaseq/", curName, ".csv")
     }
     try({
       indDf = read.csv(indPath)
@@ -36,47 +36,47 @@ adjustPositions = function(df, protocol) {
       colnames(indDf)[1] = "POSITION"
       joinDat = plyr::join(dfSub, indDf, by = "POSITION", type = "left", match = "all")
       joinDat$Sample_AlignPos_Var = paste(joinDat$Sample, joinDat$Alignment_Pos, joinDat$VAR.NT, sep = "__")
-      #joinDat$AlignPos_Var = paste(joinDat$Alignment_Pos, joinDat$VAR.NT, sep = "__")
+      joinDat$AlignPos_Var = paste(joinDat$Alignment_Pos, joinDat$VAR.NT, sep = "__")
       combDat = rbind(combDat, joinDat)
     })
   }
   return(combDat)
 }
 
-getConsensus <- function(metaSeq, ampSeq, protocol, maxFreq, minFreq, freqCol) {
-    metaseq <- metaSeq
-    ampseq <- ampSeq
-    metaseq =  metaseq[metaseq$coverage >= 97,]
-    ampseq =   ampseq[ampseq$coverage >= 97,]
-    metaseqFilt <- metaseq[metaseq[[freqCol]] >= minFreq & metaseq[[freqCol]] <= maxFreq, ]
-    ampseqFilt <- ampseq[ampseq[[freqCol]] >= minFreq & ampseq[[freqCol]] <= maxFreq, ]
-    ampseqFilt = ampseqFilt[ampseqFilt$Sample%in%metaseqFilt$Sample,]
-    metaseqFilt = metaseqFilt[metaseqFilt$Sample%in%ampseqFilt$Sample,]
-    if (protocol == "ampseq") {
-      # dataframe with stats
-      targDf = ampseqFilt
-      # data to check agains
-      refDf = metaseqFilt
-      targSnv <- unique(refDf$Sample_AlignPos_Var)
-    } else if (protocol == "metaseq") {
-      # dataframe with stats
-      targDf = metaseqFilt
-      # data to check agains
-      refDf = ampseqFilt
-      targSnv <- unique(refDf$Sample_AlignPos_Var)
+getConsensus <- function(metaSeq, ampSeq, protocol, maxFreq, minFreq, freqCol, Snv_col) {
+  metaseq <- metaSeq
+  ampseq <- ampSeq
+  metaseq =  metaseq[metaseq$coverage >= 97,]
+  ampseq =   ampseq[ampseq$coverage >= 97,]
+  metaseqFilt <- metaseq[metaseq[[freqCol]] >= minFreq & metaseq[[freqCol]] <= maxFreq, ]
+  ampseqFilt <- ampseq[ampseq[[freqCol]] >= minFreq & ampseq[[freqCol]] <= maxFreq, ]
+  ampseqFilt = ampseqFilt[ampseqFilt$Sample%in%metaseqFilt$Sample,]
+  metaseqFilt = metaseqFilt[metaseqFilt$Sample%in%ampseqFilt$Sample,]
+  if (protocol == "ampseq") {
+    # dataframe with stats
+    targDf = ampseqFilt
+    # data to check agains
+    refDf = metaseqFilt
+    targSnv <- unique(refDf[, Snv_col])
+  } else if (protocol == "metaseq") {
+    # dataframe with stats
+    targDf = metaseqFilt
+    # data to check agains
+    refDf = ampseqFilt
+    targSnv <- unique(refDf[, Snv_col])
+  }
+  ConsTest <- numeric()
+  for (i in 1:nrow(targDf)) {
+    curSnv =  targDf[i, Snv_col]
+    if (curSnv%in%targSnv){
+      curCons = 1
+    } else {
+      curCons = 0
     }
-    ConsTest <- numeric()
-    for (i in 1:nrow(targDf)) {
-      curSnv =  targDf[i, "Sample_AlignPos_Var"]
-      if (curSnv%in%targSnv){
-        curCons = 1
-      } else {
-        curCons = 0
-      }
-      ConsTest = c(ConsTest, curCons)
-    }
-    targDf$ConsTest <- ConsTest
-    return(targDf)
+    ConsTest = c(ConsTest, curCons)
+  }
+  targDf$ConsTest <- ConsTest
+  return(targDf)
 }
 
 runRoc = function(df, protocol, freqCol, splitPerc) {
@@ -112,10 +112,10 @@ runRoc = function(df, protocol, freqCol, splitPerc) {
 }
 
 
-getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
-  ampSnps<-ampseq$Sample_AlignPos_Var
+getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq, Snv_col){
+  ampSnps<-unique(ampseq[, Snv_col])
   # process meta
-  metaSnps<-metaseq$Sample_AlignPos_Var
+  metaSnps<-unique(metaseq[, Snv_col])
   print(length(metaSnps))
   print(length(ampSnps))
   print(length(metaSnps[metaSnps%in%ampSnps]))
@@ -137,10 +137,10 @@ getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
 ampseqFilt = adjustPositions(df=ampseqFilt, protocol="ampseq")
 metaseqFilt = adjustPositions(df=metaseqFilt, protocol="metaseq") 
 
-ampseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY")
-metaseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY")
+ampseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "AlignPos_Var")
+metaseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "AlignPos_Var")
 
-getVenn(metaseq=metaseqCons, ampseq=ampseqCons, filtSteps=1, maxFreq = 1, minFreq = 0)
+getVenn(metaseq=metaseqCons, ampseq=ampseqCons, filtSteps=1, maxFreq = 1, minFreq = 0, Snv_col="AlignPos_Var")
 
 runRoc(df=metaseqCons, protocol="metaseq", freqCol="ALLELE.FREQUENCY", splitPerc=0.7)
 runRoc(df=ampseqCons, protocol="ampseq", freqCol="ALLELE.FREQUENCY", splitPerc=0.7)
@@ -155,8 +155,8 @@ ggplot(metaseqCons, aes(x=ALLELE.FREQUENCY)) + geom_histogram() + scale_x_contin
 
 # try without indels
 
-ampseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY")
-metaseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY")
+ampseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "Sample_AlignPos_Var")
+metaseqCons = getConsensus(metaSeq=metaseqFilt, ampSeq=ampseqFilt, protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "Sample_AlignPos_Var")
 
 getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
   ampSnps<-ampseq$Sample_AlignPos_Var
@@ -174,7 +174,7 @@ getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
     ggtitle(curTitle)+
     theme(text = element_text(size = 22)) +
     theme(plot.title = element_text(hjust = 0.5, vjust = 5, size = 24))
-  ggsave(filename =  paste0("Venn/Intra_AlignPos_ExclIndels_", curTitle,'.jpeg'), plot = venPlot, width = 9, height = 9, units = 'in', dpi = 600, device = 'jpeg')
+  #ggsave(filename =  paste0("Venn/Intra_AlignPos_ExclIndels_", curTitle,'.jpeg'), plot = venPlot, width = 9, height = 9, units = 'in', dpi = 600, device = 'jpeg')
 }
 
 metaseqSub = metaseqCons[nchar(metaseqCons$REF.NT) == 1 & nchar(metaseqCons$VAR.NT) == 1, ]
@@ -184,6 +184,3 @@ runRoc(df=metaseqSub, protocol="metaseq", freqCol="ALLELE.FREQUENCY", splitPerc=
 runRoc(df=ampseqSub, protocol="ampseq", freqCol="ALLELE.FREQUENCY", splitPerc=0.7)
 
 getVenn(metaseq=metaseqSub, ampseq=ampseqSub, filtSteps=1, maxFreq = 1, minFreq = 0)
-
-
-

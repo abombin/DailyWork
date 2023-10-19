@@ -40,7 +40,7 @@ getAllStats = function(inFile) {
 
 # run parallel
 runPar = function(filesList) {
-  useCores = 70
+  useCores = 30
   cl <- makeCluster(useCores, type = "FORK")
   registerDoParallel(cl)
   
@@ -52,13 +52,24 @@ runPar = function(filesList) {
 }
 
 #Ampseq overlap
-ampFiles = getFilesList(inPath="IntraSnv_ampseq_overlap", pattern="output.bam$")
-ampStats = runPar(filesList = ampFiles)
-write.csv(ampStats, "IntraSnv_ampseq_overlap/ampseq_stats_2.csv", row.names = F)
+# ampFiles = getFilesList(inPath="IntraSnv_ampseq_overlap", pattern="output.bam$")
+# ampStats = runPar(filesList = ampFiles)
+# write.csv(ampStats, "IntraSnv_ampseq_overlap/ampseq_stats_2.csv", row.names = F)
 
 #metaseq overlap
-metaFiles = getFilesList(inPath="IntraSnv_metaseq_overlap", pattern="output.bam$")
+# metaFiles = getFilesList(inPath="IntraSnv_metaseq_overlap", pattern="output.bam$")
 #metaSel = metaFiles[grepl("EHC-C19-1636Z", metaFiles)]
-metaStats = runPar(filesList = metaFiles)
-write.csv(metaStats, "IntraSnv_metaseq_overlap/metaseq_stats_2.csv", row.names = F)
+# metaStats = runPar(filesList = metaFiles)
+# write.csv(metaStats, "IntraSnv_metaseq_overlap/metaseq_stats_2.csv", row.names = F)
 
+
+
+#Ampseq overlap
+ampFiles = getFilesList(inPath="IntraSnv_ampseq_all", pattern="output.bam$")
+ampStats = runPar(filesList = ampFiles)
+write.csv(ampStats, "IntraSnv_results/ampseq_stats_2.csv", row.names = F)
+
+#metaseq overlap
+metaFiles = getFilesList(inPath="IntraSnv_metaseq_all", pattern="output.bam$")
+metaStats = runPar(filesList = metaFiles)
+write.csv(metaStats, "IntraSnv_results/metaseq_stats_2.csv", row.names = F)

@@ -101,7 +101,10 @@ def getCorPos(resDf, i, refAl, varAl):
 # handle deletion
 def getRelPosDel(refAl, varAl, i, refSub):
   refRefAl = refAl[1] + '-POS'
-  Ref_Al_RelPos = refSub.loc[0, refRefAl]
+  if refRefAl == 'N-POS':
+    Ref_Al_RelPos = 'NaN'
+  else:
+    Ref_Al_RelPos = refSub.loc[0, refRefAl]
   # find which Indel column has deletion amd record relative position
   refVarAl = '-'  + refAl[1:]
   if refSub.loc[0, 'Indel1'] == refVarAl:

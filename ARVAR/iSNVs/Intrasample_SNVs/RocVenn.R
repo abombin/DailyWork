@@ -69,17 +69,19 @@ runRoc = function(df, protocol, freqCol, splitPerc) {
   
   if (protocol == "metaseq") {
     
-    # glm_formula <- as.formula(paste("ConsTest ~", freqCol, "+ STRAND.BIAS + QUAL + Var_Al_RelPos + I(meandepth^2)" ))
-    # aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
+    glm_formula <- as.formula(paste("ConsTest ~", freqCol, "+ STRAND.BIAS + QUAL + Var_Al_RelPos + I(meandepth^2)" ))
+    aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
     
-    glm_formula <- as.formula(paste("ConsTest ~", freqCol, "+ STRAND.BIAS + QUAL + Var_Al_RelPos + meandepth" ))
-    aucModel <- randomForest(formula = glm_formula, data = train_data, ntree = 1000)
+    # glm_formula <- as.formula(paste("ConsTest ~", freqCol, "+ STRAND.BIAS + QUAL + Var_Al_RelPos + meandepth" ))
+    # aucModel <- randomForest(formula = glm_formula, data = train_data, ntree = 1000)
     
   } else if (protocol == "ampseq") {
-    # glm_formula <- as.formula(paste("ConsTest ~", freqCol, " + QUAL + Var_Al_RelPos  + I(meandepth^2)"))
-    # aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
-    glm_formula <- as.formula(paste("ConsTest ~", freqCol, " + QUAL + Var_Al_RelPos  + meandepth"))
-    aucModel <- randomForest(formula = glm_formula, data = train_data, ntree = 1000)
+    
+    glm_formula <- as.formula(paste("ConsTest ~", freqCol, " + QUAL + Var_Al_RelPos  + I(meandepth^2)"))
+    aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
+    
+    # glm_formula <- as.formula(paste("ConsTest ~", freqCol, " + QUAL + Var_Al_RelPos  + meandepth"))
+    # aucModel <- randomForest(formula = glm_formula, data = train_data, ntree = 1000)
     
   }
   
@@ -121,9 +123,9 @@ getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
 
 
 # no frequency filtering
-metaseq = getConsensus(metaSeq="IntraSnv_metaseq_overlap/metaseq_comb_stats.csv", ampSeq="IntraSnv_ampseq_overlap/ampseq_comb_stats.csv", 
+metaseq = getConsensus(metaSeq="IntraSnv_results/metaseq_comb_derep_overlap.csv", ampSeq="IntraSnv_results/ampseq_comb_derep_overlap.csv", 
                        protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", filtSteps=1)
-ampseq = getConsensus(metaSeq="IntraSnv_metaseq_overlap/metaseq_comb_stats.csv", ampSeq="IntraSnv_ampseq_overlap/ampseq_comb_stats.csv", 
+ampseq = getConsensus(metaSeq="IntraSnv_results/metaseq_comb_derep_overlap.csv", ampSeq="IntraSnv_results/ampseq_comb_derep_overlap.csv", 
                       protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", filtSteps=1)
 
 
@@ -146,7 +148,7 @@ colnames(metaStats)[2:4] = c("coverage_meta", "endpos_meta", "OrigName_meta")
 combStats = plyr::join(ampStats, metaStats, by = "Sample", type = "left", match = "all")
 identical(combStats$endpos, combStats$endpos_meta)
 
-write.csv(combStats, "ampseq_metaseq_overlap_combStats.csv", row.names = F)
+write.csv(combStats, "ampseq_metaseq_overlap_combStats_2.csv", row.names = F)
 
 # try without indels
 metaseqSub = metaseq[nchar(metaseq$REF.NT) == 1 & nchar(metaseq$VAR.NT) == 1, ]
