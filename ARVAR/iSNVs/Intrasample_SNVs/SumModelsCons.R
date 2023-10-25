@@ -69,3 +69,8 @@ write.csv(metaseqFreq, paste0(targDir, "metaseq_univar_freq_1_0.01.csv"), row.na
 write.csv(metaseqMultiFreq, paste0(targDir, "metaseq_multivar_freq_1_0.01.csv"), row.names = F)
 
 system("aws s3 cp --recursive IntraSnv_results/SumModels/ s3://abombin/ARVAR/iSNVs/IntraSnv_results/SumModels/")
+
+
+system("aws s3 sync IntraSnv_results/SumModels/ s3://abombin/ARVAR/iSNVs/IntraSnv_results/SumModels/")
+
+system("aws s3 cp --recursive IntraSnv_results/class_acuracy/ s3://abombin/ARVAR/iSNVs/IntraSnv_results/class_acuracy/")

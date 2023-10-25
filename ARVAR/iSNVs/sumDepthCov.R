@@ -3,10 +3,13 @@ library(foreach)
 
 
 getFilesList = function(inPath, pattern) {
-  filesList = list.files(inPath, pattern = pattern, full.names = T, recursive = T)
+  filesList = list.files(inPath, pattern = pattern, full.names = T)
   return(filesList)
 }
 
+ampList = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/iSNVs_ampseq_2023-08-22/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
+metaList = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/iSNVs_metaseq_2023-08-22/output/variants/bowtie2", pattern = ".sorted.bam$")
+print(length(metaList))
 
 getStats = function(inFile) {
   cmd_str = paste0("/home/ubuntu/extraVol/bio-soft/samtools coverage --depth 0 ", inFile)
@@ -15,61 +18,47 @@ getStats = function(inFile) {
   curStats = strsplit(outStrs[[2]], "\t")[[1]]
   curCov = curStats[6]
   curDepth = curStats[7]
-  #curFile = basename(inFile)
-  curFile = gsub("\\/output.bam", "", inFile)
-  curFile = basename(curFile)
+  curFile = basename(inFile)
+  curFile = gsub("\\..*", "", curFile)
   df = data.frame(curFile, curCov, curDepth)
   colnames(df) = c("Sample_id", "Coverage", "Mean_depth")
   return(df)
 }
 
-
-getAllStats = function(inFile) {
-  cmd_str = paste0("/home/ubuntu/extraVol/bio-soft/samtools coverage --depth 0 ", inFile)
-  statsStr = system(cmd_str, intern = T)
-  outStrs = strsplit(statsStr, " ")
-  curStats = strsplit(outStrs[[2]], "\t")[[1]]
-  curNames = strsplit(outStrs[[1]], "\t")[[1]]
-  #curFile = basename(inFile)
-
-  df = data.frame(t(curStats))
-  colnames(df) = curNames
-  colnames(df)[1] = "OrigSamp"
-  return(df)
-}
-
 # run parallel
 runPar = function(filesList) {
-  useCores = 30
+  useCores = 20
   cl <- makeCluster(useCores, type = "FORK")
   registerDoParallel(cl)
   
   combDat = foreach(i = filesList, .combine  = 'rbind') %dopar% {
-    getAllStats(inFile = i)
+    getStats(inFile = i)
   }
   parallel::stopCluster(cl = cl)
   return(combDat)
 }
 
-#Ampseq overlap
-# ampFiles = getFilesList(inPath="IntraSnv_ampseq_overlap", pattern="output.bam$")
-# ampStats = runPar(filesList = ampFiles)
-# write.csv(ampStats, "IntraSnv_ampseq_overlap/ampseq_stats_2.csv", row.names = F)
+# ampStats = runPar(filesList = ampList)
+# write.csv(ampStats, "ampseqCovDepth.csv", row.names = F)
 
-#metaseq overlap
-# metaFiles = getFilesList(inPath="IntraSnv_metaseq_overlap", pattern="output.bam$")
-#metaSel = metaFiles[grepl("EHC-C19-1636Z", metaFiles)]
-# metaStats = runPar(filesList = metaFiles)
-# write.csv(metaStats, "IntraSnv_metaseq_overlap/metaseq_stats_2.csv", row.names = F)
+# metaStats = runPar(filesList = metaList)
+# write.csv(metaStats, "metaseqCovDepth.csv", row.names = F)
 
+# get summaries for previous runs
+# ampseq
+# amp1 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_ampseq_2023-06-16/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
+# amp2 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_Apr242023/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
+# amp_comb = c(amp1, amp2)
+# 
+# #ampOldCombStats = runPar(filesList = amp_comb)
+# write.csv(ampOldCombStats, "ampseqOldSampCovDepth.csv", row.names = F)
+# 
+# #metaseq
 
-
-#Ampseq overlap
-ampFiles = getFilesList(inPath="IntraSnv_ampseq_all", pattern="output.bam$")
-ampStats = runPar(filesList = ampFiles)
-write.csv(ampStats, "IntraSnv_results/ampseq_stats_2.csv", row.names = F)
-
-#metaseq overlap
-metaFiles = getFilesList(inPath="IntraSnv_metaseq_all", pattern="output.bam$")
-metaStats = runPar(filesList = metaFiles)
-write.csv(metaStats, "IntraSnv_results/metaseq_stats_2.csv", row.names = F)
+meta1 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_metaseq_2023-05-24/output/variants/bowtie2", pattern = ".sorted.bam$")
+meta2 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_metaseq_2023-06-29/output/variants/bowtie2", pattern = ".sorted.bam$")
+meta_comb = c(meta1, meta2)
+print(length(meta_comb))
+# 
+metaOldCombStats = runPar(filesList = meta_comb)
+write.csv(metaOldCombStats, "metaseqOldSampCovDepth.csv", row.names = F)
