@@ -5,15 +5,14 @@ import pandas as pd
 import os
 from sklearn.metrics import confusion_matrix, roc_auc_score
 
-"""
+
 curPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0.csv'
 predPath = 'IntraSnv_results/ampseq_comb_derep.csv'
-outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv'
-"""
+outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_balanced.csv'
 
-curPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0.csv'
-predPath = 'IntraSnv_results/metaseq_comb_derep.csv'
-outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv'
+#curPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0.csv'
+#predPath = 'IntraSnv_results/metaseq_comb_derep.csv'
+#outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_balanced.csv'
 
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
@@ -135,12 +134,16 @@ model = RandomForestClassifier(
     random_state=42,
     n_jobs=-1
 )
+
+# redo classification with  balanced complete dataset
 model.fit(X_train_balanced, y_train_balanced)
 y_pred = model.predict(X_test)
 predDfFilt["ConsTest"] = y_pred
 
 predDfCons = predDfFilt[predDfFilt["ConsTest"] == 1]
+predDfCons["Origin"] = "Predict"
 overlapCons = dfFilt[dfFilt["ConsTest"] ==1]
+overlapCons["Origin"] = "Overlap"
 
 combDat = pd.concat([overlapCons, predDfCons], axis=0, ignore_index=True).reset_index(drop=True)
 combDat.head()

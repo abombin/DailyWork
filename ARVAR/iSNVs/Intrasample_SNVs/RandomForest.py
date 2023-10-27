@@ -18,11 +18,14 @@ varNa = df[mask]
 dfFilt = df.dropna(subset=['Var_Al_RelPos', 'Ref_Al_RelPos'], how='any').reset_index(drop = True)
 
 
-# make frequency filtering then apply is.in to filter out samples that do not overlapcolOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
+# make frequency filtering then apply is.in to filter out samples that do not overlap
+#colOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
+#colOpt5 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq", 'Sample', 'Sample_AlignPos_Ref_Var']
 #colOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
 #colOpt1 = ['ALLELE.FREQUENCY', 'DEPTH', 'Var_Al_RelPos', 'coverage', 'meandepth', 'meanbaseq', 'meanmapq', 'STRAND.BIAS', 'QUAL']
+
+
 colOpt1 = ['ALLELE.FREQUENCY', 'STRAND.BIAS', 'QUAL', 'Var_Al_RelPos', 'Ref_Al_RelPos',  'meandepth', 'meanbaseq']
-#colOpt1 = ['ALLELE.FREQUENCY', 'QUAL', 'Var_Al_RelPos', 'Ref_Al_RelPos',  'meandepth', 'meanbaseq']
 colOpt5 = ['ALLELE.FREQUENCY', 'STRAND.BIAS', 'QUAL', 'Var_Al_RelPos', 'Ref_Al_RelPos',  'meandepth', 'meanbaseq', 'Sample', 'Sample_AlignPos_Ref_Var']
 
 X = dfFilt[colOpt5]
@@ -169,7 +172,7 @@ sumTest = SumPredictPerSamp(df = X_test_1, minFreq = 0, maxFreq = 1)
 
 sumTest["True_Positive_Ident"].sum() / sumTest["Total_Positive_Truth"].sum() * 100
 
-sumTest.to_csv("IntraSnv_results/ampseq_ConsTest_freq_1_0_predictSum.csv", index=False)
+#sumTest.to_csv("IntraSnv_results/ampseq_ConsTest_freq_1_0_predictSum.csv", index=False)
 
 print(sumTest["True_Positive_Ident"].sum() / sumTest["Total_Positive_Truth"].sum() * 100)
 
