@@ -56,6 +56,6 @@ table(atacFilt$Annotations)
 
 #gene.activities <- GeneActivity(atacFilt, assay='Combined_peaks',  max.width = NULL)
 
-gene.activities <- GeneActivity(atacFilt, assay='Combined_peaks',  max.width = NULL, extend.upstream = 50000, extend.downstream = 50000)
+gene.activities <- GeneActivity(atacFilt, assay='Combined_peaks',  max.width = NULL, extend.upstream = 20000, extend.downstream = 20000)
 
-saveRDS(gene.activities, "PredGeneActivities_atacIntegrated_macs2_2_50KB")
+saveRDS(gene.activities, "PredGeneActivities_atacIntegrated_macs2_2_20kbUp_20kbDown")

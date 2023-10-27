@@ -57,18 +57,19 @@ table(atacFilt$Annotations)
 
 # get cell names 
 # workw with atacMarix
-subset_seurat_object <- subset(atacFilt, Annotations == "GABA")
+subset_seurat_object <- subset(atacFilt, Annotations == "OPC")
 targCellNames = subset_seurat_object$Merged_CellName
 # get gene expression
-gene1_expr = subset_seurat_object@assays$RNA@counts["Kcnmb2" ,]
+gene1_expr = subset_seurat_object@assays$RNA@counts["Sox6" ,]
 
 # find gene coordinates
-extraRange = 50000
+extraRange = 20000
 
-subset_gene <- annotations[annotations$gene_name == "Kcnmb2"]
+subset_gene <- annotations[annotations$gene_name == "Sox6"]
 gene1 = data.frame(subset_gene@ranges)
 startPos = gene1$start[1] - extraRange
 endPos = gene1$end[nrow(gene1)] + extraRange
+#endPos = gene1$end[nrow(gene1)]
 chr = as.character(subset_gene@seqnames@values)
 
 # get fragmetns
@@ -229,6 +230,8 @@ combRnaAtac$RNA_counts = as.numeric(combRnaAtac$RNA_counts)
 combRnaAtac$Fragments = as.numeric(combRnaAtac$Fragments)
 
 cor.test(combRnaAtac$RNA_counts, combRnaAtac$Fragments,  method = "spearman")
+
+cor.test(combRnaAtac$RNA_counts, combRnaAtac$Fragments,  method = "pearson")
 
 
 

@@ -92,7 +92,7 @@ unique(atacFilt$Annotations)
 clusters<-c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'OPC', 'ODC')
 
 for (curCluster in clusters) {
-  targDir = targetDir<-paste0('Atac_Rna_coverPlots/macs2_Integ/', cond, '/Grey_Col/', curCluster, "/")
+  targetDir<-paste0('Atac_Rna_coverPlots/macs2_Integ/', cond, '/Grey_Col/', curCluster, "/")
   dir.create(targDir, recursive = T, showWarnings = F)
   covPlotPerClust(seurObj=atacFilt, curCluster=curCluster, genesDf=allMarkers, annotGenes=annotGenes, clusters=clusters, targetDir=targetDir, curDate=curDate)
 }
