@@ -90,14 +90,14 @@ metadatFilt$Sample1 = gsub('_', "-", metadatFilt$AP_lab_id)
 metadatFilt$Sample = gsub('_', "-", metadatFilt$AP_lab_id)
 
 
-metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_balanced.csv')
-ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_balanced.csv')
+metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv')
+ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
 
 metaseqOverlap = metaseq[metaseq$Origin == "Overlap",]
 ampseqOverlap = ampseq[ampseq$Origin == "Overlap",]
 
-# metaseqOverlap = metaseq
-# ampseqOverlap = ampseq
+#metaseqOverlap = metaseq
+#ampseqOverlap = ampseq
 
 metaseqOverlap$Pi.Ln.Pi. = ShPi(targDf=metaseqOverlap, freqCol="ALLELE.FREQUENCY")
 ampseqOverlap$Pi.Ln.Pi. = ShPi(targDf=ampseqOverlap, freqCol="ALLELE.FREQUENCY")
@@ -141,3 +141,13 @@ wilcVax_2_Amp = runWilcox(curPred ="Vaccinated", combShannon= ampCombShan)
 
 wilcVarMeta = runWilcox(curPred ="WHO_variant", combShannon= metaCombShan)
 wilcVarAmp = runWilcox(curPred ="WHO_variant", combShannon= ampCombShan)
+
+
+# evaluate all samples together
+combShannon = rbind(metaCombShan, ampCombShan)
+
+ShanCorAll = runSpearman(df=combShannon, varList=varList, testVar="Shannon")
+wilcVaxAll = runWilcox(curPred ="vax_doses_received", combShannon= combShannon)
+wilcVax_2_All = runWilcox(curPred ="Vaccinated", combShannon= combShannon)
+
+wilcVarAll = runWilcox(curPred ="WHO_variant", combShannon= combShannon)

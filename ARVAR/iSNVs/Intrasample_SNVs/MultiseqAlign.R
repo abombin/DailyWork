@@ -24,6 +24,17 @@ makeAlignment = function(combStats, protocol) {
   
 }
 
+
+dir.create("All_Samples_Mapping/All/Comb_fasta/", recursive = T, showWarnings = F)
+
+makeAlignmentAll = function() {
+  system(paste0("cat references/MN908947.3.fna > All_Samples_Mapping/All/Comb_fasta/allSequences.fasta"))
+  system(paste0("cat All_Samples_Mapping/ampseq/Comb_fasta/allSequences.fasta >> All_Samples_Mapping/All/Comb_fasta/allSequences.fasta"))
+  system(paste0("cat All_Samples_Mapping/metaseq/Comb_fasta/allSequences.fasta >> All_Samples_Mapping/All/Comb_fasta/allSequences.fasta"))
+  cmd_mafft = paste0("mafft --maxiterate 1000 --thread 70 --globalpair All_Samples_Mapping/All/Comb_fasta/allSequences.fasta > All_Samples_Mapping/All/All_samples_align.fasta")
+  system(cmd_mafft)
+}
+
 # run alignment function
 
 # metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv')
@@ -32,7 +43,9 @@ makeAlignment = function(combStats, protocol) {
 # makeAlignment(combStats=metaseqSamp, protocol = 'metaseq')
 
 
-ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
-ampseqSamp = data.frame(unique(ampseq[, c("Sample", "OrigName")]))
+# ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
+# ampseqSamp = data.frame(unique(ampseq[, c("Sample", "OrigName")]))
+# 
+# makeAlignment(combStats=ampseqSamp, protocol = 'ampseq')
 
-makeAlignment(combStats=ampseqSamp, protocol = 'ampseq')
+makeAlignmentAll()

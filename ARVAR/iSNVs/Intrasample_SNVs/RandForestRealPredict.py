@@ -5,24 +5,29 @@ import pandas as pd
 import os
 from sklearn.metrics import confusion_matrix, roc_auc_score
 
+# redo the predictions with a filter for coverage
 
 curPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0.csv'
 predPath = 'IntraSnv_results/ampseq_comb_derep.csv'
-outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_balanced.csv'
+outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv'
 
 #curPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0.csv'
 #predPath = 'IntraSnv_results/metaseq_comb_derep.csv'
-#outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_balanced.csv'
+#outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv'
 
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
 def getFiltDf(curPath):
     df = pd.read_csv(curPath)
+    df = df[df['coverage'] >= 97]
     dfFilt = df.dropna(subset=['Var_Al_RelPos', 'Ref_Al_RelPos'], how='any').reset_index(drop = True)
     return(dfFilt)
 
 dfFilt = getFiltDf(curPath)
 predDf = getFiltDf(predPath)
+
+print(dfFilt['coverage'].min())
+print(predDf['coverage'].min())
 
 mask = predDf["Samp_Pos_Ref_Alt"].isin(dfFilt["Samp_Pos_Ref_Alt"])
 predDfFilt = predDf[~mask].reset_index(drop = True)
@@ -136,7 +141,7 @@ model = RandomForestClassifier(
 )
 
 # redo classification with  balanced complete dataset
-model.fit(X_train_balanced, y_train_balanced)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 predDfFilt["ConsTest"] = y_pred
 
