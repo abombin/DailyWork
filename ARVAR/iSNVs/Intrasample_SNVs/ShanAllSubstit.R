@@ -37,7 +37,7 @@ getShannon = function(df) {
     allDepth = c(allDepth, curDepth)
   }
   combDat = data.frame(allSamples, allShannon, allDepth)
-  colnames(combDat) = c("Sample", "Shannon", "meandepth", "Origin")
+  colnames(combDat) = c("Sample", "Shannon", "meandepth")
   return(combDat)
 }
 
@@ -93,8 +93,12 @@ metadatFilt$Sample = gsub('_', "-", metadatFilt$AP_lab_id)
 metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv')
 ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
 
-metaseqOverlap = metaseq[metaseq$Origin == "Overlap",]
-ampseqOverlap = ampseq[ampseq$Origin == "Overlap",]
+metaseqOverlap = metaseq[nchar(metaseq$REF.NT) == 1 & nchar(metaseq$VAR.NT) == 1, ]
+ampseqOverlap = ampseq[nchar(ampseq$REF.NT) == 1 & nchar(ampseq$VAR.NT) == 1, ]
+
+# check that no extra spaces are present
+metaseqOverlap1 = metaseq[nchar(metaseq$REF.NT) ==  nchar(metaseq$VAR.NT),  ]
+ampseqOverlap1 = ampseq[nchar(ampseq$REF.NT) == nchar(ampseq$VAR.NT), ]
 
 #metaseqOverlap = metaseq
 #ampseqOverlap = ampseq
@@ -144,6 +148,8 @@ wilcVarAmp = runWilcox(curPred ="WHO_variant", combShannon= ampCombShan)
 
 
 # evaluate all samples together
+metaCombShan$Protocol = "metaseq"
+ampCombShan$Protocol = "ampseq"
 combShannon = rbind(metaCombShan, ampCombShan)
 
 ShanCorAll = runSpearman(df=combShannon, varList=varList, testVar="Shannon")
@@ -151,3 +157,49 @@ wilcVaxAll = runWilcox(curPred ="vax_doses_received", combShannon= combShannon)
 wilcVax_2_All = runWilcox(curPred ="Vaccinated", combShannon= combShannon)
 
 wilcVarAll = runWilcox(curPred ="WHO_variant", combShannon= combShannon)
+
+
+# multivariate
+combShannon$NormShan = combShannon$Shannon
+#combShannon$NormShan[combShannon$NormShan == 0] = 0.005900276
+combShannon$NormShan = scale(log(combShannon$NormShan, base = 10))
+
+shapiro.test(combShannon$NormShan)
+ks.test(combShannon$NormShan, "pnorm")
+
+DfSel = combShannon[, c("Shannon", "NormShan", "meandepth", "Ct_value", "WHO_variant", "vax_doses_received", "disease_severity", "Ct_depth_adj", "Vaccinated", "days_post_symptom_onset", "Protocol")]
+#DfSel = drop_na(DfSel)
+varSel = DfSel[DfSel$WHO_variant == "Delta" | DfSel$WHO_variant == "Omicron",]
+model2 = lm(NormShan~Ct_depth_adj+WHO_variant+Vaccinated , data = varSel)
+summary(model2)
+residuals <- residuals(model2)
+ks.test(residuals, "pnorm")
+shapiro.test(residuals)
+
+
+
+
+
+DfSel = combShannon[, c("Shannon", "NormShan", "meandepth", "Ct_value", "WHO_variant", "vax_doses_received", "disease_severity", "Ct_depth_adj", "Vaccinated", "days_post_symptom_onset", "Protocol")]
+varSel = DfSel[DfSel$WHO_variant == "Delta" | DfSel$WHO_variant == "Omicron",]
+nrow(varSel)
+varSel = rstatix::drop_na(varSel)
+nrow(varSel)
+
+shapiro.test(varSel$NormShan)
+ks.test(varSel$NormShan, "pnorm")
+
+model2 = lm(NormShan~  Protocol + Ct_depth_adj+WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) # best fit but still not normal
+model2 = lm(NormShan~ Protocol + Ct_depth_adj+WHO_variant+vax_doses_received + I(vax_doses_received^2) + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) 
+
+
+
+summary(model2)
+residuals <- residuals(model2)
+ks.test(residuals, "pnorm")
+shapiro.test(residuals)
+stepModel = stepAIC(model2, direction = "both" , trace = T, steps = 10000)
+summary(stepModel )
+residuals <- residuals(stepModel)
+ks.test(residuals, "pnorm")
+shapiro.test(residuals)

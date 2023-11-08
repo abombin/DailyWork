@@ -1,3 +1,5 @@
+library(ggplot2)
+
 adjustPositions = function(df, protocol, targDir) {
   combDat = data.frame()
   sampleNames = unique(df$OrigName) 
@@ -41,3 +43,16 @@ write.csv(metaseqPos, "IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_Gl
 system("aws s3 cp IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_GlobPos.csv s3://abombin/ARVAR/iSNVs/IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_GlobPos.csv")
 
 system("aws s3 cp IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_GlobPos.csv s3://abombin/ARVAR/iSNVs/IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_GlobPos.csv")
+
+min(sumTable$Freq)
+max(sumTable$Freq)
+
+
+sumTable = data.frame(table(ampseqPos$AllAlignPos_Var))
+sumTableMeta = data.frame(table(metaseqPos$AllAlignPos_Var))
+
+median(sumTable$Freq)
+median(sumTableMeta$Freq)
+
+mean(sumTable$Freq)
+mean(sumTableMeta$Freq)
