@@ -31,7 +31,8 @@ fullMult$Predictor = rownames(fullMult)
 DfSel = combShannon[, c("Shannon", "NormShan", "meandepth", "Ct_value", "WHO_variant", "vax_doses_received", "disease_severity", "Ct_depth_adj", "Vaccinated", "days_post_symptom_onset", "Protocol")]
 varSel = DfSel[DfSel$WHO_variant == "Delta" | DfSel$WHO_variant == "Omicron",]
 varSel = drop_na(varSel)
-model2 = lm(NormShan~Ct_depth_adj+WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2), data = varSel) 
+model2 = lm(NormShan~Protocol+Ct_depth_adj+WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2), data = varSel) 
+summary(model2)
 fullMult = summary(model2)
 residuals <- residuals(model2)
 ks.test(residuals, "pnorm")
@@ -42,7 +43,14 @@ fullMult$bonferroni_p = p.adjust(fullMult$Pval, method = "bonferroni")
 fullMult$fdr_p = p.adjust(fullMult$Pval, method = "fdr")
 fullMult$Predictor = rownames(fullMult)
 
-write.csv(fullMult, "IntraSnv_results/statistic_res/AllSamplesCombShannon_Multivar_CtVarVacSympt.csv", row.names = F)
+
+stepModel = stepAIC(model2, direction = "both" , trace = T, steps = 10000)
+summary(stepModel )
+residuals <- residuals(stepModel)
+ks.test(residuals, "pnorm")
+shapiro.test(residuals)
+
+#write.csv(fullMult, "IntraSnv_results/statistic_res/AllSamplesCombShannon_Multivar_CtVarVacSympt.csv", row.names = F)
 
 
 model2 = lm(NormShan~Ct_depth_adj+WHO_variant+vax_doses_received + I(vax_doses_received^2) + days_post_symptom_onset + I(days_post_symptom_onset^2), data = varSel) 

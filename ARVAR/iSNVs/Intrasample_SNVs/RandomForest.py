@@ -5,10 +5,14 @@ from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import os
 from sklearn.metrics import confusion_matrix, roc_auc_score
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, roc_auc_score
 
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
-df = pd.read_csv('IntraSnv_results/ampseq_ConsTest_freq_1_0.csv')
+df = pd.read_csv('IntraSnv_results/metaseq_ConsTest_freq_1_0.csv')
+plotname = "Metaseq_auc_plot.png"
+
 #df = pd.read_csv('IntraSnv_ampseq_overlap/ampseq_metaseq_overlap_97_allFreq.csv')
 #df = pd.read_csv('IntraSnv_results/metaseq_ConsTest_freq_1_0.csv')
 
@@ -179,3 +183,31 @@ print(sumTest["True_Positive_Ident"].sum() / sumTest["Total_Positive_Truth"].sum
 print(sumTest['Correctly_identified'].sum() / sumTest['Total_SNVs'].sum() * 100)
 
 print(f"AUC Score: {auc_score}")
+
+# make plots 
+
+def plot_auc_curve(y_test, y_pred_proba, plotname):
+    # Create a new figure and axes
+    fig, ax = plt.subplots(figsize=(10, 8))  # Adjust width and height as desired
+
+    fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+
+    # Clear the previous plot
+    ax.clear()
+
+    # Plotting the AUC curve
+    ax.plot(fpr, tpr, label='AUC Curve (AUC = %0.2f)' % auc_score)
+    ax.plot([0, 1], [0, 1], 'k--', label='Random')
+    ax.set_xlabel('False Positive Rate (FPR)', fontsize=18)
+    ax.set_ylabel('True Positive Rate (TPR)', fontsize=18)
+    ax.set_title('Receiver Operating Characteristic (ROC)', fontsize=18)
+    ax.legend(loc='lower right',  fontsize=16)
+    ax.tick_params(axis='both', which='major', labelsize=16)
+
+    # Save the plot with adjusted width, height, and DPI
+    plt.savefig(plotname, dpi=300, bbox_inches='tight')
+
+    # Display the plot
+    plt.show()
+    
+plot_auc_curve(y_test = y_test, y_pred_proba = y_pred_proba, plotname = plotname)

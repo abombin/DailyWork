@@ -7,7 +7,7 @@ colSums(is.na(combShannon))
 completeDat = combShannon[, c("Sample", "Shannon", "meandepth", "AP_lab_id", "WHO_variant", "disease_severity", "Protocol")]
 IncomplDat = combShannon[, c("Ct_value", "vax_doses_received", "days_since_last_vax", "days_post_symptom_onset", "Ct_depth_adj", "Vaccinated")]
 
-mice_data <- mice(IncomplDat, m = 10)
+mice_data <- mice(IncomplDat, m = 10, seed=33)
 
 imputed_data <- complete(mice_data)
 

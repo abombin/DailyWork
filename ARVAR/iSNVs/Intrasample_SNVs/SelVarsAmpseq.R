@@ -59,3 +59,4 @@ importance_scores
 
 finalModel = glm(ConsTest ~ALLELE.FREQUENCY + STRAND.BIAS + QUAL +Var_Al_RelPos + Ref_Al_RelPos  + meandepth + meanbaseq, data = dfFilt, family = "binomial")
 summary(finalModel )
+print(vif(finalModel))

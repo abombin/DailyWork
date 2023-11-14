@@ -37,7 +37,7 @@ getShannon = function(df) {
     allDepth = c(allDepth, curDepth)
   }
   combDat = data.frame(allSamples, allShannon, allDepth)
-  colnames(combDat) = c("Sample", "Shannon", "meandepth", "Origin")
+  colnames(combDat) = c("Sample", "Shannon", "meandepth")
   return(combDat)
 }
 
@@ -93,11 +93,11 @@ metadatFilt$Sample = gsub('_', "-", metadatFilt$AP_lab_id)
 metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv')
 ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
 
-metaseqOverlap = metaseq[metaseq$Origin == "Overlap",]
-ampseqOverlap = ampseq[ampseq$Origin == "Overlap",]
+#metaseqOverlap = metaseq[metaseq$Origin == "Overlap",]
+#ampseqOverlap = ampseq[ampseq$Origin == "Overlap",]
 
-#metaseqOverlap = metaseq
-#ampseqOverlap = ampseq
+metaseqOverlap = metaseq
+ampseqOverlap = ampseq
 
 metaseqOverlap$Pi.Ln.Pi. = ShPi(targDf=metaseqOverlap, freqCol="ALLELE.FREQUENCY")
 ampseqOverlap$Pi.Ln.Pi. = ShPi(targDf=ampseqOverlap, freqCol="ALLELE.FREQUENCY")
