@@ -19,7 +19,6 @@ dfFilt<-groupMarkers[(groupMarkers$p_val_adj < 0.05),]
 entrez <- as.data.frame(mapIds(org.Mm.eg.db, keys = dfFilt$Genes, keytype = "SYMBOL", column="ENTREZID"))
 colnames(entrez)<-'entrez'
 dfEntr<-cbind(dfFilt, entrez)
-
 colnames(dfEntr)[1] = "Cluster"
 
 table(dfEntr$Cluster)
@@ -43,15 +42,15 @@ allEnrichedKegg<-function(dataTab, clusters, targDir, curDate){
       write.csv(ego2Res, tablePath, row.names = F)
       combDat = rbind(combDat, ego2Res)
       
-      if (nrow(ego2Res[(ego2Res$p.adjust < 0.05),]) > 0){
-        plot1<-barplot(ego2, showCategory=20)
-        plotPath<-paste0(targDir, cluster, '_20Terms_', curDate, '.jpeg')
+      # if (nrow(ego2Res[(ego2Res$p.adjust < 0.05),]) > 0){
+      #   plot1<-barplot(ego2, showCategory=20)
+      #   plotPath<-paste0(targDir, cluster, '_20Terms_', curDate, '.jpeg')
+      #   
+      #   png(filename = plotPath, height = 16, width = 20, units = 'in', res = 300)
+      #   print(plot1)
+      #   dev.off()
         
-        png(filename = plotPath, height = 16, width = 20, units = 'in', res = 300)
-        print(plot1)
-        dev.off()
-        
-      }
+      #}
     }
     
   }
@@ -60,22 +59,24 @@ allEnrichedKegg<-function(dataTab, clusters, targDir, curDate){
 
 # p_val_adj in the name means that only genes that are significant based on seurat default pval adjustment are used
 
+dfEntr<-cbind(dfFilt, entrez)
+colnames(dfEntr)[1] = "Cluster"
 keggAll = allEnrichedKegg(dataTab=dfEntr, clusters = clusters, targDir = './Paper_figs/Fig2/ClustProf/Kegg_all_p_val_adj/', curDate = curDate)
-write.csv(keggAll, paste0(targDir, "AllClust_AllGenes_2023-06-14_p_val_adj.csv"), row.names = F)
+write.csv(keggAll, paste0(targDir, "AllClust_AllGenes_2023-11-15_p_val_adj.csv"), row.names = F)
 
 # only positive 
 dfEntr<-cbind(dfFilt, entrez)
 colnames(dfEntr)[1] = "Cluster"
 dfEntr = dfEntr[(dfEntr$avg_log2FC > 0),]
 keggPos = allEnrichedKegg(dataTab=dfEntr, clusters = clusters, targDir = './Paper_figs/Fig2/ClustProf/Kegg_positive_p_val_adj/', curDate = curDate)
-write.csv(keggPos, paste0(targDir, "AllClust_PosGenes_2023-06-14_p_val_adj.csv"), row.names = F)
+write.csv(keggPos, paste0(targDir, "AllClust_PosGenes_2023-11-15_p_val_adj.csv"), row.names = F)
 
 # only negative 
 dfEntr<-cbind(dfFilt, entrez)
 colnames(dfEntr)[1] = "Cluster"
 dfEntr = dfEntr[(dfEntr$avg_log2FC < 0),]
 keggNeg = allEnrichedKegg(dataTab=dfEntr, clusters = clusters, targDir = './Paper_figs/Fig2/ClustProf/Kegg_negative_p_val_adj/', curDate = curDate)
-write.csv(keggNeg, paste0(targDir, "AllClust_NegGenes_2023-06-14_p_val_adj.csv"), row.names = F)
+write.csv(keggNeg, paste0(targDir, "AllClust_NegGenes_2023-11-15_p_val_adj.csv"), row.names = F)
 
 # make DotPlots
 # custom dot plot

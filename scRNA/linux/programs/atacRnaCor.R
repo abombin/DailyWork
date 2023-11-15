@@ -88,5 +88,3 @@ p2gComb<-data.frame(foreach(i=clusters, .combine=rbind, .packages=c('Seurat', 'S
 parallel::stopCluster(cl = cl)
 
 write.csv(p2gComb, file = paste0(targetDir, "peakGenes_All_", curDate, ".csv"), row.names = F)
-
-
