@@ -1,0 +1,188 @@
+library(ggvenn)
+library(ggpubr)
+library(MASS)
+library(pROC)
+library(caret)
+library(pscl)
+library(car)
+library(randomForest)
+
+dir.create("Venn", showWarnings = F)
+###
+getConsensus <- function(metaSeq, ampSeq, protocol, maxFreq, minFreq, freqCol, filtSteps) {
+if (filtSteps == 1) {
+  metaseq <- read.csv(metaSeq)
+  ampseq <- read.csv(ampSeq)
+  
+  metaseq =  metaseq[metaseq$Coverage >= 97,]
+  ampseq =   ampseq[ampseq$Coverage >= 97,]
+  
+  metaseqFilt <- metaseq[metaseq[[freqCol]] >= minFreq & metaseq[[freqCol]] <= maxFreq, ]
+  ampseqFilt <- ampseq[ampseq[[freqCol]] >= minFreq & ampseq[[freqCol]] <= maxFreq, ]
+  
+  ampseqFilt = ampseqFilt[ampseqFilt$Sample%in%metaseqFilt$Sample,]
+  metaseqFilt = metaseqFilt[metaseqFilt$Sample%in%ampseqFilt$Sample,]
+  if (protocol == "ampseq") {
+    # dataframe with stats
+    targDf = ampseqFilt
+    # data to check agains
+    refDf = metaseqFilt
+    targSnv <- unique(refDf$Samp_Pos_Ref_Alt)
+  } else if (protocol == "metaseq") {
+    # dataframe with stats
+    targDf = metaseqFilt
+    # data to check agains
+    refDf = ampseqFilt
+    targSnv <- unique(refDf$Samp_Pos_Ref_Alt)
+  }
+  ConsTest <- numeric()
+  for (i in 1:nrow(targDf)) {
+    curSnv =  targDf[i, "Samp_Pos_Ref_Alt"]
+    if (curSnv%in%targSnv){
+      curCons = 1
+    } else {
+      curCons = 0
+    }
+    ConsTest = c(ConsTest, curCons)
+  }
+  targDf$ConsTest <- ConsTest
+  return(targDf)
+} else if (filtSteps == 2 & protocol == "metaseq") {
+  df = read.csv(metaSeq) 
+  dfFilt = df[df[[freqCol]] >= minFreq & df[[freqCol]] <= maxFreq, ]
+  return(dfFilt)
+} else if (filtSteps == 2 & protocol == "ampseq") {
+  df = read.csv(ampSeq) 
+  dfFilt = df[df[[freqCol]] >= minFreq & df[[freqCol]] <= maxFreq, ]
+  return(dfFilt)
+} 
+}
+
+runRoc = function(df, protocol, freqCol, splitPerc) {
+  dfFilt = df[!is.na(df$Var_Al_RelPos),]
+  
+  set.seed(42)
+  train_idx <- createDataPartition(dfFilt$ConsTest, p = splitPerc, list = FALSE)
+  train_data <- dfFilt[train_idx, ]
+  test_data <- dfFilt[-train_idx, ]
+  
+  if (protocol == "metaseq") {
+    
+    glm_formula <- as.formula(paste("ConsTest ~", freqCol, "+ STRAND.BIAS + QUAL + Var_Al_RelPos + I(Mean_depth^2)" ))
+    aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
+    
+  } else if (protocol == "ampseq") {
+    
+    glm_formula <- as.formula(paste("ConsTest ~", freqCol, " + QUAL + Var_Al_RelPos  + I(Mean_depth^2)"))
+    aucModel <- glm(formula = glm_formula, data = train_data, family = "binomial")
+  }
+  
+  probs <- predict(aucModel, newdata = test_data, type = "response")
+  roc_obj <- roc(test_data$ConsTest ~ probs, plot = TRUE, print.auc = TRUE)
+  
+  # actual predictions and testing
+  threshold <- 0.5
+  test_data$PredictedConsTest <- ifelse(probs >= threshold, 1, 0)
+  equal_count <- sum(test_data$ConsTest == test_data$PredictedConsTest)
+  # Count the number of times values in Column1 are NOT equal to Column2
+  not_equal_count <- sum(test_data$ConsTest != test_data$PredictedConsTest)
+  sumCorrect = equal_count / (equal_count + not_equal_count) * 100
+  print(roc_obj$auc)
+  print(sumCorrect )
+}
+
+
+
+
+# metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_ampseq_overlap_comb_derep_decont_covFilt_97_v2.csv", ampSeq="snvs_comb_res/ampseq_metaseq_overlap_comb_derep_decont_covFilt_97_v2.csv", 
+#                                protocol="metaseq", maxFreq=1, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=2)
+
+# cols_to_scale <- c("ALLELE.FREQUENCY", "QUAL", "STRAND.BIAS", "Var_Al_RelPos", "Mean_depth")
+#metaseq[, cols_to_scale] <- scale(metaseq[, cols_to_scale])
+# runRoc(df=metaseq , protocol = "metaseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
+
+
+getVenn<-function(metaseq, ampseq, filtSteps, maxFreq, minFreq){
+
+    ampSnps<-ampseq$Samp_Pos_Ref_Alt
+    # process meta
+
+    metaSnps<-metaseq$Samp_Pos_Ref_Alt
+    print(length(metaSnps))
+    print(length(ampSnps))
+    print(length(metaSnps[metaSnps%in%ampSnps]))
+    print(length(metaSnps[metaSnps%in%ampSnps]) / (length(metaSnps) + length(ampSnps)) * 100 )
+    # make a list
+    snps<-list('Amplicon'=ampSnps, 'Metagenomic'=metaSnps)
+    curTitle = paste0("FiltSteps_", filtSteps, "_MaxFreq_", maxFreq, "_minFreq_", minFreq)
+    # plot
+    venPlot<-ggvenn(snps, text_size=5, set_name_size=8)+
+      ggtitle(curTitle)+
+      theme(text = element_text(size = 22)) +
+      theme(plot.title = element_text(hjust = 0.5, vjust = 5, size = 24))
+    ggsave(filename =  paste0("Venn/", curTitle,'.jpeg'), plot = venPlot, width = 9, height = 9, units = 'in', dpi = 600, device = 'jpeg')
+}
+
+# no frequency filtering
+metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                       protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+ampseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                      protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+
+runRoc(df=metaseq , protocol = "metaseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
+runRoc(df=ampseq , protocol = "ampseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
+
+
+getVenn(metaseq=metaseq, ampseq=ampseq, filtSteps=1, maxFreq = 1, minFreq = 0)
+
+hist(metaseq$ALLELE.FREQUENCY)
+hist(ampseq$ALLELE.FREQUENCY)
+
+#metaseq[, cols_to_scale] <- scale(metaseq[, cols_to_scale])
+runRoc(df=metaseq , protocol = "metaseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
+#ampseq[, cols_to_scale] <- scale(ampseq[, cols_to_scale])
+runRoc(df=ampseq , protocol = "ampseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
+
+# 0.02 1
+metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                       protocol="metaseq", maxFreq=1, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+ampseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                      protocol="ampseq", maxFreq=1, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+
+getVenn(metaseq=metaseq, ampseq=ampseq, filtSteps=1, maxFreq = 1, minFreq = 0.02)
+
+# 0.02 0.98
+metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                       protocol="metaseq", maxFreq=0.98, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+ampseq = getConsensus(metaSeq="snvs_comb_res/metaseq_overlap_comb_derep_decont_covFilt_0_v2.csv", ampSeq="snvs_comb_res/ampseq_overlap_comb_derep_covFilt_0_v2.csv", 
+                      protocol="ampseq", maxFreq=0.98, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=1)
+
+getVenn(metaseq=metaseq, ampseq=ampseq, filtSteps=1, maxFreq = 0.98, minFreq = 0.02)
+
+
+
+### 2 steps filtering 
+# 0.02 1
+metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_ampseq_overlap_comb_derep_decont_covFilt_97_v2.csv", ampSeq="snvs_comb_res/ampseq_metaseq_overlap_comb_derep_decont_covFilt_97_v2.csv", 
+                              protocol="metaseq", maxFreq=1, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=2)
+
+ampseq = getConsensus(metaSeq="snvs_comb_res/metaseq_ampseq_overlap_comb_derep_decont_covFilt_97_v2.csv", ampSeq="snvs_comb_res/ampseq_metaseq_overlap_comb_derep_decont_covFilt_97_v2.csv", 
+                       protocol="ampseq", maxFreq=1, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=2)
+getVenn(metaseq=metaseq, ampseq=ampseq, filtSteps=2, maxFreq = 1, minFreq = 0.02)
+
+hist(metaseq$ALLELE.FREQUENCY)
+hist(ampseq$ALLELE.FREQUENCY)
+
+
+# 0.02 0.98
+metaseq = getConsensus(metaSeq="snvs_comb_res/metaseq_ampseq_overlap_comb_derep_decont_covFilt_97_v2.csv", ampSeq="snvs_comb_res/ampseq_metaseq_overlap_comb_derep_decont_covFilt_97_v2.csv", 
+                       protocol="metaseq", maxFreq=0.98, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=2)
+
+ampseq = getConsensus(metaSeq="snvs_comb_res/metaseq_ampseq_overlap_comb_derep_decont_covFilt_97_v2.csv", ampSeq="snvs_comb_res/ampseq_metaseq_overlap_comb_derep_decont_covFilt_97_v2.csv", 
+                      protocol="ampseq", maxFreq=0.98, minFreq=0.02, freqCol="ALLELE.FREQUENCY", filtSteps=2)
+# hist(metaseq$ALLELE.FREQUENCY)
+# hist(ampseq$ALLELE.FREQUENCY)
+
+getVenn(metaseq=metaseq, ampseq=ampseq, filtSteps=2, maxFreq = 0.98, minFreq = 0.02)
+
+runRoc(df=metaseq , protocol = "metaseq", freqCol = "ALLELE.FREQUENCY", splitPerc = 0.7)
