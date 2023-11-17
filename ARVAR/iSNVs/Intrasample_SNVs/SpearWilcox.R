@@ -151,3 +151,11 @@ wilcVaxAll = runWilcox(curPred ="vax_doses_received", combShannon= combShannon)
 wilcVax_2_All = runWilcox(curPred ="Vaccinated", combShannon= combShannon)
 
 wilcVarAll = runWilcox(curPred ="WHO_variant", combShannon= combShannon)
+
+
+DisSevWilcox = runWilcox(curPred ="disease_severity", combShannon= combShannon)
+
+# additional tests
+vaccShan = combShannon[combShannon$Vaccinated == "Yes",]
+ShanCorVacs = runSpearman(df=vaccShan, varList=varList, testVar="Shannon")
+

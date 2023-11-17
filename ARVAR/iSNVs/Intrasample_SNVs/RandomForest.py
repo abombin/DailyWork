@@ -11,10 +11,11 @@ from sklearn.metrics import roc_curve, roc_auc_score
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
 df = pd.read_csv('IntraSnv_results/metaseq_ConsTest_freq_1_0.csv')
-plotname = "Metaseq_auc_plot.png"
+#plotname = "Metaseq_auc_plot.png"
+#df = pd.read_csv('IntraSnv_results/ampseq_ConsTest_freq_1_0.csv')
+
 
 #df = pd.read_csv('IntraSnv_ampseq_overlap/ampseq_metaseq_overlap_97_allFreq.csv')
-#df = pd.read_csv('IntraSnv_results/metaseq_ConsTest_freq_1_0.csv')
 
 mask = df[['Var_Al_RelPos', 'Ref_Al_RelPos']].isna().any(axis=1)
 varNa = df[mask]
@@ -23,8 +24,8 @@ dfFilt = df.dropna(subset=['Var_Al_RelPos', 'Ref_Al_RelPos'], how='any').reset_i
 
 
 # make frequency filtering then apply is.in to filter out samples that do not overlap
-#colOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
-#colOpt5 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq", 'Sample', 'Sample_AlignPos_Ref_Var']
+#colOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "DEPTH", "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
+#colOpt5 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "DEPTH", "QUAL", "Var_Al_RelPos", "Ref_Al_RelPos", "meandepth", "coverage",  "meanmapq", "meanbaseq", 'Sample', 'Sample_AlignPos_Ref_Var']
 #colOpt1 = ["ALLELE.FREQUENCY", "STRAND.BIAS" , "QUAL", "meandepth", "coverage",  "meanmapq", "meanbaseq"]
 #colOpt1 = ['ALLELE.FREQUENCY', 'DEPTH', 'Var_Al_RelPos', 'coverage', 'meandepth', 'meanbaseq', 'meanmapq', 'STRAND.BIAS', 'QUAL']
 
@@ -70,10 +71,11 @@ pd.concat((pd.DataFrame(X_train.columns, columns = ['variable']),
 
 varImportance = pd.concat((pd.DataFrame(X_train.columns, columns = ['variable']), 
            pd.DataFrame(model.feature_importances_, columns = ['importance'])), 
-          axis = 1).sort_values(by='importance', ascending = False)
+          axis = 1).sort_values(by='importance', ascending = False)[:20]
 
 varImportance["AUC"] = auc_score
 
+#varImportance.to_csv("IntraSnv_results/SumModels/Ampseq_VarImportance.csv", index=False)
 #varImportance.to_csv("IntraSnv_results/SumModels/Metaseq_VarImportance.csv", index=False)
 
 
