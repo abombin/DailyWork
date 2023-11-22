@@ -38,7 +38,7 @@ DfSel = combShannon[, c("Shannon", "NormShan", "meandepth", "Ct_value", "WHO_var
 varSel = DfSel[DfSel$WHO_variant == "Delta" | DfSel$WHO_variant == "Omicron",]
 varSel = drop_na(varSel)
 multColumns = c("Estimate", "Std.Error", 't.value', "Pval")
-model2 = lm(NormShan~Protocol++WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2), data = varSel) 
+model2 = lm(NormShan~Protocol+WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2), data = varSel) 
 fullMult = summary(model2)
 fullMult = data.frame(fullMult$coefficients)
 colnames(fullMult) = multColumns
