@@ -1,3 +1,3 @@
 python programs/download.py
 python programs/inputFile.py
-time sh programs/viralreconAmp.sh
+time python programs/runViralrecon.py

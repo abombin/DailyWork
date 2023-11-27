@@ -30,6 +30,6 @@ def runViralrecon(inputList, trim, protocol):
         subprocess.run(cmd_str, shell=True)
 
 
-runViralrecon(inputList, trim=5, protocol="amplicon")
+runViralrecon(inputList, trim=0, protocol="amplicon")
 
 # make a function abvoe modular via splitting command string to substrins and then use " ".join([])
