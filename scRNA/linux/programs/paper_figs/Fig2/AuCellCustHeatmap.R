@@ -3,14 +3,20 @@ library(viridis)
 library(Hmisc)
 library(plyr)
 
-df = read.csv("Paper_figs/Fig2/AllClust_AllGenes_2023-11-15_p_val_adj.csv")
-df = read.csv("Paper_figs/Fig2/AllClust_PosGenes_2023-11-15_p_val_adj.csv")
-df = read.csv("Paper_figs/Fig2/AllClust_NegGenes_2023-11-15_p_val_adj.csv")
+df = read.csv("AUCell_KeggClustProF_All_ContrVsStress_2022-11-28.csv") # all
+#df = df[df$avg_log2FC > 0,] # positive
+df = df[df$avg_log2FC < 0,] # negative
+
+colnames(df)[1:2] = c("Cluster", "pvalue") 
+colnames(df)[7] = c("Description") 
 
 clusters = c('SUB', 'CA1', 'CA2', 'CA3', 'DG', 'GABA', 'OPC', 'ODC', "C-R", 'MG')
 
 df = df[df$Cluster%in%clusters,]
 
+
+# need to rename the columns to match the program, rename final paths and filter based on positvie negative logf2 change at the beginning of the code
+# stopped here
 
 getTopPath = function(groupMarkers, topNumb) {
   combDf = data.frame(matrix(nrow = 0, ncol = 0))
@@ -32,7 +38,6 @@ findMissing<-function(dataTab, clusters){
   allClust<-character()
   allP<-numeric()
   allCount<-numeric()
-  allGeneRatio <- character()
   allPAdj = numeric()
   for (cluster in clusters) {
     dfSel<-dataTab[(dataTab$Cluster==cluster),]
@@ -42,19 +47,17 @@ findMissing<-function(dataTab, clusters){
         curClust<-cluster
         curP<-1
         curCount<-0
-        curGeneRatio = "0/0"
         curPAdj = 1
         allDesc<-c(allDesc, curDesc)
         allClust<-c(allClust, curClust)
         allP<-c(allP, curP)
         allCount<-c(allCount, curCount)
-        allGeneRatio = c(allGeneRatio, curGeneRatio)
         allPAdj = c(allPAdj, curPAdj)
         # combine all vectors and make a dataframe from them
       }
     }
   }
-  finalTable<-data.frame(Description=allDesc, pvalue=allP, p.adjust=allPAdj, Count=allCount, Cluster=allClust )
+  finalTable<-data.frame(Description=allDesc, pvalue=allP, p_val_adj=allPAdj, avg_log2FC=allCount, Cluster=allClust )
   return(finalTable)
 }
 
@@ -79,7 +82,7 @@ addPCat<-function(dataTab, pcol, newCol){
   return(dataTab)
 }
 
-keggComplete<-addPCat(dataTab=keggComplete, pcol = "p.adjust", newCol = "P_Adjust")
+keggComplete<-addPCat(dataTab=keggComplete, pcol = "p_val_adj", newCol = "P_Adjust")
 
 keggComplete$Cluster = factor(keggComplete$Cluster, levels =  c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'ODC', 'OPC', 'MG', 'C-R', 'SUB'))
 
@@ -101,6 +104,6 @@ targDir = "Paper_figs/Fig2/Heatmap/"
 
 topN = "5"
 typeGenes = "Negative"
-png(filename = paste0(targDir,"ClustProf_Top_", topN, "_", typeGenes, "_Genes_2023-11-20.png"), width = 22, height = 16, units = "in", res = 300)
+png(filename = paste0(targDir,"AuCell_Top_", topN, "_", typeGenes, "_KEGG_2023-11-27.png"), width = 22, height = 16, units = "in", res = 300)
 print(curHeatMap)
 dev.off()
