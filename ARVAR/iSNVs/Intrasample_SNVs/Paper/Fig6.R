@@ -31,3 +31,5 @@ p1 <- ggplot(ampseq, aes(x = Estimate, y  = reorder(Predictor, Estimate), fill =
   labs( x = "Estimate", y = "Predictor") + theme_classic() + theme(text = element_text(size = 26), plot.title = element_text(hjust = 0.5, vjust = 0.5))
 
 ggsave(file = "Paper/Figs/Shannon_Multivar.png", plot = p1, height = 14, width = 18, units = "in", dpi = 300)
+
+system("aws s3 cp --recursive Paper/Figs/ s3://abombin/ARVAR/iSNVs/Paper/Figs/")

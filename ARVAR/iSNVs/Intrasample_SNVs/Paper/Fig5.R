@@ -11,9 +11,13 @@ combShannon$NormShan = scale(log(combShannon$NormShan, base = 10))
 
 
 combFilt = combShannon[combShannon$days_post_symptom_onset < 100 & combShannon$days_post_symptom_onset  >=0,]
-# scatter_quadratic <- ggplot(combFilt, aes(x = days_post_symptom_onset, y = NormShan)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula  = y ~ x + I(x^2), se = FALSE, color = "red")
+scatter_quadratic <- ggplot(combFilt, aes(x = days_post_symptom_onset, y = NormShan)) +
+   geom_point() +
+   geom_smooth(method = "lm", formula  = y ~ x + I(x^2), se = FALSE, color = "red")
+
+ggplot(combShannon, aes(x = days_post_symptom_onset, y = NormShan)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula  = y ~ x + I(x^2), se = FALSE, color = "red")
 
 
 symptomnms = ggplot(combFilt , aes(x = days_post_symptom_onset, y = NormShan)) +
@@ -25,6 +29,7 @@ ggsave(file = "Paper/Figs/Shannon_Symptoms.png", plot = symptomnms, height = 12,
 
 cor.test(combFilt$days_post_symptom_onset, combFilt$Shannon, method = "spearman")
 modle1 = lm(NormShan~days_post_symptom_onset, data = combFilt)
+modle1 = lm(NormShan~days_post_symptom_onset + I(days_post_symptom_onset^2), data = combFilt)
 summary(modle1)
 
 # vaccination
