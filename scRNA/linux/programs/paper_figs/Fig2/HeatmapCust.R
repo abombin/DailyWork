@@ -7,7 +7,7 @@ allMarkers = read.csv("allDiffExprLogfc0.25_ContrVsStress_2022-10-25.csv")
 makeHeatMaps = function(RNA.combined.norm, cluster, allMarkers) {
   curMarkers = unique(allMarkers$Genes[allMarkers$Cell_Type == cluster])
   curMarkersDf = allMarkers[allMarkers$Cell_Type == cluster,]
-  objSub = subset(RNA.combined.norm, Annotations == "CA1")
+  objSub = subset(RNA.combined.norm, Annotations == cluster)
   Idents(objSub) = objSub$group
   curExpression = data.frame(AverageExpression(object=objSub,assays = "RNA", features = curMarkers, group.by = "ident", layer = "scale.data"))
   curExpression$Genes = rownames(curExpression)
@@ -50,6 +50,6 @@ grid.arrange(grobs = combPlots, ncol = 5)
 
 targDir = './Paper_figs/Fig2/HeatMap/'
 
-jpeg(filename = paste0(targDir, "AllClusters_Heatmap_AllGenes_2023-11-21.jpeg"), width = 46, height = 20, units = "in", res = 300)
+jpeg(filename = paste0(targDir, "AllClusters_Heatmap_AllGenes_2023-12-05.jpeg"), width = 46, height = 20, units = "in", res = 300)
 print(grid.arrange(grobs = combPlots, ncol = 5))
 dev.off()
