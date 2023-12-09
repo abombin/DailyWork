@@ -12,5 +12,6 @@ mafft --auto --thread 32 Paper/allAlignment/Comb_fasta/allCons.fasta > Paper/all
 
 cd /home/ubuntu/extraVol/ARVAR/iSNVs/Paper/allAlignment/
 
-time iqtree -s allCons.align -m TEST -nt 30 -bb 1000
+# added row names with __ separator to alignment names  
+time iqtree -s allCons_edit.align -m TEST -nt 30 -bb 1000
 
