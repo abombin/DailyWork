@@ -11,11 +11,11 @@ from sklearn.metrics import roc_curve, roc_auc_score
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
 df = pd.read_csv('IntraSnv_results/metaseq_ConsTest_freq_1_0.csv')
-#plotname = "Metaseq_auc_plot.png"
+plotname = "Metaseq_auc_plot.png"
+
 #df = pd.read_csv('IntraSnv_results/ampseq_ConsTest_freq_1_0.csv')
 
 
-#df = pd.read_csv('IntraSnv_ampseq_overlap/ampseq_metaseq_overlap_97_allFreq.csv')
 
 mask = df[['Var_Al_RelPos', 'Ref_Al_RelPos']].isna().any(axis=1)
 varNa = df[mask]

@@ -7,15 +7,16 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 
 # redo the predictions with a filter for coverage
 
-curPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0.csv'
-predPath = 'IntraSnv_results/ampseq_comb_derep.csv'
-outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv'
-
-#curPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0.csv'
-#predPath = 'IntraSnv_results/metaseq_comb_derep.csv'
-#outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv'
-
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
+
+#curPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0.csv'
+#predPath = 'IntraSnv_results/ampseq_comb_derep.csv'
+#outPath = 'IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv'
+
+curPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0.csv'
+predPath = 'IntraSnv_results/metaseq_comb_derep.csv'
+outPath = 'IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv'
+
 
 def getFiltDf(curPath):
     df = pd.read_csv(curPath)
@@ -144,6 +145,8 @@ model = RandomForestClassifier(
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 predDfFilt["ConsTest"] = y_pred
+
+print("%.4f" % model.oob_score_)
 
 predDfCons = predDfFilt[predDfFilt["ConsTest"] == 1]
 predDfCons["Origin"] = "Predict"

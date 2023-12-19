@@ -38,20 +38,20 @@ runPar = function(filesList) {
   return(combDat)
 }
 
-# ampStats = runPar(filesList = ampList)
-# write.csv(ampStats, "ampseqCovDepth.csv", row.names = F)
+ampStats = runPar(filesList = ampList)
+write.csv(ampStats, "ampseqCovDepth.csv", row.names = F)
 
-# metaStats = runPar(filesList = metaList)
-# write.csv(metaStats, "metaseqCovDepth.csv", row.names = F)
+metaStats = runPar(filesList = metaList)
+write.csv(metaStats, "metaseqCovDepth.csv", row.names = F)
 
 # get summaries for previous runs
 # ampseq
-# amp1 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_ampseq_2023-06-16/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
-# amp2 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_Apr242023/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
-# amp_comb = c(amp1, amp2)
+amp1 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_ampseq_2023-06-16/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
+amp2 = getFilesList(inPath = "/home/ubuntu/extraVol/Viralrecon/covid/Ludy_Apr242023/output/variants/bowtie2", pattern = "_trim.sorted.bam$")
+amp_comb = c(amp1, amp2)
 # 
-# #ampOldCombStats = runPar(filesList = amp_comb)
-# write.csv(ampOldCombStats, "ampseqOldSampCovDepth.csv", row.names = F)
+ampOldCombStats = runPar(filesList = amp_comb)
+write.csv(ampOldCombStats, "ampseqOldSampCovDepth.csv", row.names = F)
 # 
 # #metaseq
 

@@ -8,6 +8,9 @@ library(car)
 library(randomForest)
 library(ggplot2)
 
+
+# this program was used to create training test for random forest
+
 ampseq = read.csv("IntraSnv_results/ampseq_comb_derep_overlap.csv")
 metaseq = read.csv("IntraSnv_results/metaseq_comb_derep_overlap.csv")
 
@@ -141,8 +144,8 @@ metaseqOverlap = adjustPositions(df=metaseqOverlap, protocol="metaseq", targDir 
 ampseqCons = getConsensus(metaSeq=metaseqOverlap, ampSeq=ampseqOverlap, protocol="ampseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "Sample_AlignPos_Ref_Var")
 metaseqCons = getConsensus(metaSeq=metaseqOverlap, ampSeq=ampseqOverlap, protocol="metaseq", maxFreq=1, minFreq=0, freqCol="ALLELE.FREQUENCY", Snv_col = "Sample_AlignPos_Ref_Var")
 
-# write.csv(ampseqCons, "IntraSnv_results/ampseq_ConsTest_freq_1_0.01.csv", row.names = F)
-# write.csv(metaseqCons, "IntraSnv_results/metaseq_ConsTest_freq_1_0.01.csv", row.names = F)
+# write.csv(ampseqCons, "IntraSnv_results/ampseq_ConsTest_freq_1_0_allAlign.csv", row.names = F)
+# write.csv(metaseqCons, "IntraSnv_results/metaseq_ConsTest_freq_1_0_allAlign.csv", row.names = F)
 
 metaseqFreq1 = metaseqCons[metaseqCons$ALLELE.FREQUENCY == 1,]
 ampseqFreq1 = ampseqCons[ampseqCons$ALLELE.FREQUENCY == 1,]
