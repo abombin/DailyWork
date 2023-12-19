@@ -1,10 +1,13 @@
 library(ggplot2)
 library(gridExtra)
+library(viridis)
 
 allMarkers = read.csv("allDiffExprLogfc0.25_ContrVsStress_2022-10-25.csv")
-
+allMarkers = allMarkers[allMarkers$p_val_adj < 0.05,]
+clusters = unique(allMarkers$Cell_Type)
 
 makeHeatMaps = function(cluster, allMarkers) {
+  #curMarkersDf = allMarkers[allMarkers$Cell_Type == cluster,]
   curMarkersDf = allMarkers[allMarkers$Cell_Type == cluster,]
   curMarkersDf$Genes <- factor(curMarkersDf$Genes, levels = curMarkersDf$Genes[order(curMarkersDf$avg_log2FC, decreasing = TRUE)])
   curHeatMap = ggplot(curMarkersDf, aes(x=Genes, y=Cell_Type, fill=avg_log2FC))+
@@ -23,6 +26,7 @@ makeHeatMaps = function(cluster, allMarkers) {
 }
 
 clusters = c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'ODC', 'OPC', 'MG', 'C-R', 'SUB')
+clusters = c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'ODC', 'OPC', 'MG', 'SUB')
 
 combPlots = list()
 for (i in 1:length(clusters)) {
@@ -35,7 +39,7 @@ grid.arrange(grobs = combPlots, ncol = 5)
 
 targDir = './Paper_figs/Fig2/HeatMap/'
 
-jpeg(filename = paste0(targDir, "AllClusters_Heatmap_AllGenes_log2Fc_2023-12-05.jpeg"), width = 46, height = 20, units = "in", res = 300)
+jpeg(filename = paste0(targDir, "AllClusters_Heatmap_SignGenes_log2Fc_2023-12-05.jpeg"), width = 46, height = 20, units = "in", res = 300)
 print(grid.arrange(grobs = combPlots, ncol = 5))
 dev.off()
 
@@ -73,6 +77,7 @@ findMissing<-function(dataTab, clusters){
 missDat<-findMissing(dataTab = allMarkers, clusters = clusters)
 keggComplete<-rbind.fill(allMarkers, missDat)
 
+
 keggComplete$Cell_Type = factor(keggComplete$Cell_Type, levels =  c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'ODC', 'OPC', 'MG', 'C-R', 'SUB'))
 curHeatMap = ggplot(keggComplete, aes(x=Genes, y=Cell_Type, fill=avg_log2FC))+
   geom_tile() +
@@ -86,6 +91,6 @@ curHeatMap = ggplot(keggComplete, aes(x=Genes, y=Cell_Type, fill=avg_log2FC))+
   #labs(title = cluster) +
   scale_y_discrete(expand=c(0, 0)) 
 
-jpeg(filename = paste0(targDir, "AllClustersComb_Heatmap_AllGenes_log2Fc_2023-12-05.jpeg"), width = 46, height = 20, units = "in", res = 300)
+jpeg(filename = paste0(targDir, "AllClustersComb_Heatmap_SignifGenes_log2Fc_2023-12-05.jpeg"), width = 46, height = 20, units = "in", res = 300)
 print(curHeatMap)
 dev.off()
