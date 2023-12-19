@@ -23,8 +23,6 @@ combMeta$Vaccinated = NA
 combMeta$Vaccinated[combMeta$vax_doses_received == 0]<-"No"
 combMeta$Vaccinated[combMeta$vax_doses_received > 0]<-"Yes"
 
-i = 1
-
 # firth regression
 combDat = data.frame()
 for ( i in 1:nrow(df) ) {

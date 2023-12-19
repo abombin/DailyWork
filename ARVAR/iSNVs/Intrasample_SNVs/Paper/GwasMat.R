@@ -17,6 +17,8 @@ metaseq$Protocol = "Metaseq"
 
 combDat = rbind(ampseq, metaseq)
 
+combDat = combDat[combDat$ALLELE.FREQUENCY >= 0.01,]
+
 combDatSel = combDat[, c("Sample", "OrigName", "Protocol", "Batch", "POSITION", "REF.NT", "VAR.NT")]
 
 combDatSel$Samp_Prot = paste(combDatSel$Sample, combDatSel$Protocol, sep = "__")
@@ -96,8 +98,8 @@ makeSNVsMatrix = function(df, maf, sumFreq) {
 
 snvsMat = makeSNVsMatrix(df=combSNVs, maf = 0.01, sumFreq=sumFreq)
 
-write.csv(snvsMat, "Paper/Additional_analysis/GWAS/SnvsMatMaf0.01_Wu.csv", row.names = F)
-write.csv(combSNVs, "Paper/Additional_analysis/GWAS/AmpMetaCombSnvsPostPredDedup_Wu.csv", row.names = F)
+write.csv(snvsMat, "Paper/Additional_analysis/GWAS/SnvsMatMaf0.01_MinFreq0.01_Wu.csv", row.names = F)
+write.csv(combSNVs, "Paper/Additional_analysis/GWAS/AmpMetaCombSnvsPostPredDedup_MinFreq0.01_Wu.csv", row.names = F)
 
 # check that records are correct
 snvsMat[1, 1:3]

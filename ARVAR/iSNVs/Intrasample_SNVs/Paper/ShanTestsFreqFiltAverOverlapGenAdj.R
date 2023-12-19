@@ -3,6 +3,8 @@ library(dplyr)
 library(car)
 library(MASS)
 
+setwd("/home/ubuntu/extraVol/ARVAR/iSNVs/")
+
 ShPi = function(targDf, freqCol) {
   combPi = numeric()
   for ( i in 1:nrow(targDf) ) {
@@ -23,6 +25,7 @@ getShannon = function(df) {
   allDepth = numeric()
   allCoverage = numeric()
   allOrigin = character()
+  allEnd = numeric()
   samplesList = unique(df$Sample)
   for (curSample in samplesList) {
     curDf = df[df$Sample == curSample,]
@@ -30,15 +33,17 @@ getShannon = function(df) {
     curShannon = -1 * sum(curDf$Pi.Ln.Pi.)
     curCoverage = unique(curDf$coverage)
     curOrigin = unique(curDf$Origin)
+    curEnd = unique(curDf$endpos)
     allSamples = c(allSamples, curSample)
     allShannon = c(allShannon, curShannon)
     allDepth = c(allDepth, curDepth)
     allCoverage = c(allCoverage, curCoverage)
     allOrigin = c(allOrigin, curOrigin)
-
+    allEnd = c(allEnd,curEnd)
+    
   }
-  combDat = data.frame(allSamples, allShannon, allDepth, allCoverage, allOrigin)
-  colnames(combDat) = c("Sample", "Shannon", "meandepth", "coverage", "Origin")
+  combDat = data.frame(allSamples, allShannon, allDepth, allCoverage, allOrigin, allEnd)
+  colnames(combDat) = c("Sample", "Shannon", "meandepth", "coverage", "Origin", "endpos")
   return(combDat)
 }
 
@@ -89,12 +94,15 @@ addMissing = function(df, refDf, overlapSamp) {
   combShannon = numeric()
   combCoverage = numeric()
   combOrigin = character()
+  combEnd = numeric()
   samplesList = unique(df$Sample)
   for ( i in 1:nrow(refDf) ) {
+    print(i)
     curSample = refDf$Sample[i]
     if (!curSample%in%samplesList) {
       curDepth = refDf$meandepth[i]
       curCoverage = refDf$coverage[i]
+      curEnd = refDf$endpos[i]
       if (curSample %in% overlapSamp) {
         curOrigin = "Overlap"
       } else {
@@ -107,9 +115,10 @@ addMissing = function(df, refDf, overlapSamp) {
       combShannon = c(combShannon, curShannon)
       combCoverage = c(combCoverage, curCoverage)
       combOrigin = c(combOrigin, curOrigin)
+      combEnd = c(combEnd, curEnd)
     }
   }
-  missingDat = data.frame(Sample = combSamples, Shannon = combShannon, meandepth = combDepth, coverage=combCoverage, Origin = combOrigin)
+  missingDat = data.frame(Sample = combSamples, Shannon = combShannon, meandepth = combDepth, coverage=combCoverage, Origin = combOrigin, endpos=combEnd)
   print(nrow(missingDat))
   combDf = rbind(df, missingDat)
   return(combDf)
@@ -143,10 +152,10 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   
   ampseqAllSamples = read.csv('IntraSnv_results/ampseq_comb_derep.csv')
   ampseqAllSamples = ampseqAllSamples[ampseqAllSamples$coverage >= 97,]
-  ampseqAllSamples = unique(ampseqAllSamples[, c("Sample",  "meandepth", "coverage")])
+  ampseqAllSamples = unique(ampseqAllSamples[, c("Sample",  "meandepth", "coverage", "endpos")])
   metaseqAllSamples = read.csv('IntraSnv_results/metaseq_comb_derep.csv')
   metaseqAllSamples = metaseqAllSamples[metaseqAllSamples$coverage >= 97,]
-  metaseqAllSamples = unique(metaseqAllSamples[, c("Sample",  "meandepth", "coverage")])
+  metaseqAllSamples = unique(metaseqAllSamples[, c("Sample",  "meandepth", "coverage", "endpos")])
   
   overlapSamp = unique(metaseqAllSamples$Sample[metaseqAllSamples$Sample%in%ampseqAllSamples$Sample])
   
@@ -196,7 +205,7 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   overlapShann = combShannon[combShannon$Origin == "Overlap",]
   predictShan = combShannon[combShannon$Origin != "Overlap",]
   
-  MeanShann <- aggregate(cbind(Shannon, meandepth, coverage, Ct_value, Ct_depth_adj) ~ Sample, data = overlapShann , FUN = mean)
+  MeanShann <- aggregate(cbind(Shannon, meandepth, coverage, Ct_value, Ct_depth_adj, endpos) ~ Sample, data = overlapShann , FUN = mean)
   MeanShann$Protocol = "Overlap"
   
   colnames(combShannon)
@@ -209,7 +218,7 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   combShannon=rbind(JoinShannon, predictShan)
   
   ##
-  combShannon$NormShan = combShannon$Shannon
+  combShannon$NormShan = combShannon$Shannon / combShannon$endpos
   minVal = min(combShannon$Shannon [combShannon$Shannon != 0]) * 0.5
   combShannon$NormShan[combShannon$NormShan == 0] = minVal
   combShannon$NormShan = scale(log(combShannon$NormShan, base = 10))
@@ -244,7 +253,7 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   # step AIC
   model1 = lm(NormShan~Protocol+meandepth+ Ct_depth_adj + WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) 
   step_model  = stepAIC(model1, direction = "both" , trace = T, steps = 10000)
- residuals <- residuals(step_model)
+  residuals <- residuals(step_model)
   print(ks.test(residuals, "pnorm"))
   print(shapiro.test(residuals))
   fullMult = summary(step_model)
@@ -256,19 +265,19 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   print(fullMult)
   
   if (addMiss == T & writeRes == T) {
-    write.csv(ShanCorAll, paste0("Paper/Tables/Shannon_MeanOverlap_Spearman_Freq_1-",minFreq, "_addMiss.csv"), row.names = F)
-    write.csv(wilcVax_2_All, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_Vax_Freq_1-",minFreq, "_addMiss.csv"), row.names = F)
-    write.csv(wilcVax, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_VaxGroups_Freq_1-", minFreq, "_addMiss.csv"), row.names = F)
-    write.csv(wilcVarAll, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_WHO_Freq_1-", minFreq, "_addMiss.csv"),  row.names = F)
+    write.csv(ShanCorAll, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, "_addMiss.csv"), row.names = F)
+    write.csv(wilcVax_2_All, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, "_addMiss.csv"), row.names = F)
+    write.csv(wilcVax, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, "_addMiss.csv"), row.names = F)
+    write.csv(wilcVarAll, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, "_addMiss.csv"),  row.names = F)
     
-    write.csv(fullMult, paste0("Paper/Tables/Shannon_MeanOverlap_Multivar_Freq_1-", minFreq, "_addMiss.csv"), row.names = T)
+    write.csv(fullMult, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_addMiss.csv"), row.names = T)
   } else if (addMiss == F & writeRes == T) {
-    write.csv(ShanCorAll, paste0("Paper/Tables/Shannon_MeanOverlap_Spearman_Freq_1-",minFreq, ".csv"), row.names = F)
-    write.csv(wilcVax_2_All, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_Vax_Freq_1-",minFreq, ".csv"), row.names = F)
-    write.csv(wilcVax, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_VaxGroups_Freq_1-", minFreq, ".csv"), row.names = F)
-    write.csv(wilcVarAll, paste0("Paper/Tables/Shannon_MeanOverlap_Wilcox_WHO_Freq_1-", minFreq, ".csv"),  row.names = F)
+    write.csv(ShanCorAll, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, ".csv"), row.names = F)
+    write.csv(wilcVax_2_All, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, ".csv"), row.names = F)
+    write.csv(wilcVax, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, ".csv"), row.names = F)
+    write.csv(wilcVarAll, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, ".csv"),  row.names = F)
     
-    write.csv(fullMult, paste0("Paper/Tables/Shannon_MeanOverlap_Multivar_Freq_1-", minFreq, ".csv"), row.names = T)
+    write.csv(fullMult, paste0("Paper/Tables/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, ".csv"), row.names = T)
   }
   return(combShannon)
 }
@@ -283,6 +292,6 @@ shanInd = makeAllTables(minFreq=0.01, addMiss=T, writeRes = T)
 
 shanInd = shanInd[!is.na(shanInd$AP_lab_id),]
 
-write.csv(shanInd, "Paper/Tables/ShannInd_MeanOverlap_Freq_1-0.01.csv", row.names = F)
+write.csv(shanInd, "Paper/Tables/ShannInd_MeanOverlap_GenLenAdj_Freq_1-0.01.csv", row.names = F)
 
 system("aws s3 sync Paper/Tables/ s3://abombin/ARVAR/iSNVs/Paper/Tables/")

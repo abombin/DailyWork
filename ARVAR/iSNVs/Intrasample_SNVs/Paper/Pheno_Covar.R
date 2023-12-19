@@ -60,6 +60,9 @@ scree_plot <- plot(1:10, eigenvalues[1:10], type = "b",
                    main = "Scree Plot")
 
 mds_components <- data.frame(mds_result$points[, 1:5])
+mds_components$Sample = rownames(mds_components)
+write.csv(mds_components, "Mds_covar_Wu.csv", row.names = F)
+
 
 # try with principal components
 pca_result <- prcomp(distMat, center = TRUE, scale. = TRUE)
