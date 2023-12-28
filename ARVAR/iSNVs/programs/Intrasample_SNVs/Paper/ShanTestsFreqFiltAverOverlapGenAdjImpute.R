@@ -2,6 +2,7 @@ library(rstatix)
 library(dplyr)
 library(car)
 library(MASS)
+library(mice)
 
 setwd("/home/ubuntu/extraVol/ARVAR/iSNVs/")
 
@@ -133,8 +134,8 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   
   
   # get shannon
-  metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions.csv')
-  ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions.csv')
+  metaseq = read.csv('IntraSnv_results/metaseq_ConsTest_freq_1_0_Predictions_oversamp.csv')
+  ampseq = read.csv('IntraSnv_results/ampseq_ConsTest_freq_1_0_Predictions_oversamp.csv')
   
   # filter by frequency
   metaseqOverlap = metaseq[metaseq$ALLELE.FREQUENCY >= minFreq, ]
@@ -216,11 +217,20 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   
   combShannon=rbind(JoinShannon, predictShan)
   
+  completeDat = combShannon[, c("Sample", "Shannon", "meandepth", "AP_lab_id", "WHO_variant", "disease_severity", "Protocol", "Origin", "endpos")]
+  IncomplDat = combShannon[, c("Ct_value", "vax_doses_received", "days_since_last_vax", "days_post_symptom_onset", "Ct_depth_adj", "Vaccinated")]
+  
+  mice_data <- mice(IncomplDat, m = 10, seed=33)
+  
+  imputed_data <- complete(mice_data)
+  
+  combShannon = cbind(completeDat, imputed_data)
+  
   ##
   combShannon$NormShan = combShannon$Shannon / combShannon$endpos
   minVal = min(combShannon$Shannon [combShannon$Shannon != 0]) * 0.5
   combShannon$NormShan[combShannon$NormShan == 0] = minVal
-  combShannon$NormShan = scale(log(combShannon$NormShan, base = 10))
+  combShannon$NormShan = log(combShannon$NormShan, base = 10)
   
   
   # univariate nin parametric tests 
@@ -228,7 +238,8 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   #combShannon = combShannon[!combShannon$days_post_symptom_onset > 100,]
   combShannon = combShannon[!((combShannon$AP_lab_id == "EHC_C19_3662V") | (combShannon$AP_lab_id == "EHC_C19_3593E")),]
   
-  combShannon = combShannon[combShannon$vax_doses_received < 3,]
+  
+  #combShannon = combShannon[combShannon$vax_doses_received < 3,]
   
   varList = c("Ct_depth_adj", "Ct_value","vax_doses_received", "meandepth", "days_since_last_vax", "days_post_symptom_onset", "disease_severity")
   varList = c("vax_doses_received", "days_since_last_vax", "days_post_symptom_onset", "disease_severity")
@@ -238,6 +249,10 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   combShannon = combShannon[combShannon$WHO_variant != "Beta",]
   wilcVarAll = runWilcox(curPred ="WHO_variant", combShannon= combShannon)
   
+  varList = c("Ct_depth_adj", "Ct_value","vax_doses_received", "meandepth", "days_since_last_vax", "days_post_symptom_onset", "disease_severity")
+  varList = c("vax_doses_received", "days_since_last_vax", "days_post_symptom_onset", "disease_severity")
+  
+  
   
   # multivariate model
   print(shapiro.test(combShannon$NormShan))
@@ -245,76 +260,77 @@ makeAllTables = function(minFreq, addMiss, writeRes) {
   
   DfSel = combShannon[, c("Shannon", "NormShan", "meandepth", "Ct_value", "WHO_variant", "vax_doses_received", "disease_severity", "Ct_depth_adj", "Vaccinated", "days_post_symptom_onset", "Protocol")]
   varSel = DfSel[DfSel$WHO_variant == "Delta" | DfSel$WHO_variant == "Omicron",]
-  varSel = varSel[!varSel$days_post_symptom_onset > 100,]
+  #varSel = varSel[!varSel$days_post_symptom_onset > 100,]
   varSel = drop_na(varSel)
-  multColumns = c("Estimate", "Std.Error", 't.value', "Pval")
+  multColumns = c("Estimate", "Std.Error", 'z.value', "Pval")
   
   print(shapiro.test(varSel$NormShan))
   print(ks.test(varSel$NormShan, "pnorm"))
   
   # step AIC
-  model1 = lm(NormShan~Protocol+meandepth+ Ct_depth_adj + WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) 
+  #model1 = glm.nb(Shannon~Protocol+meandepth+ Ct_value + WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) 
+  model1 = glm.nb(Shannon~Protocol+Ct_depth_adj + WHO_variant+Vaccinated + days_post_symptom_onset + I(days_post_symptom_onset^2) , data = varSel) 
   step_model  = stepAIC(model1, direction = "both" , trace = T, steps = 10000)
   residuals <- residuals(step_model)
   print(ks.test(residuals, "pnorm"))
   print(shapiro.test(residuals))
   fullMult = summary(step_model)
+  print(fullMult)
   fullMult = data.frame(fullMult$coefficients)
-  multColumns = c("Estimate", "Std.Error", 't.value', "Pval")
+  multColumns = c("Estimate", "Std.Error", 'z.value', "Pval")
   colnames(fullMult) = multColumns
   # write.csv(fullMult, "Paper/Tables/shannon_Multivar_Freq_1-0.02_addMiss.csv", row.names = T)
   
-  print(fullMult)
   
   varSel = combShannon[combShannon$WHO_variant == "Delta" | combShannon$WHO_variant == "Omicron",]
-  custMod = lm(NormShan~Protocol+Ct_depth_adj + WHO_variant+Vaccinated + days_post_symptom_onset , data = varSel) 
-  custMod = lm(NormShan~Protocol+Ct_depth_adj + WHO_variant+Vaccinated , data = varSel) 
+  #custMod = glm.nb(Shannon~Protocol+meandepth+ Ct_value + WHO_variant+Vaccinated + days_post_symptom_onset , data = varSel) 
+  custMod = glm.nb(Shannon~Protocol+Ct_depth_adj + WHO_variant+Vaccinated + days_post_symptom_onset , data = varSel) 
   custMult = summary(custMod)
+  print(custMult)
   custMult = data.frame(custMult$coefficients)
-  multColumns = c("Estimate", "Std.Error", 't.value', "Pval")
+  multColumns = c("Estimate", "Std.Error", 'z.value', "Pval")
   colnames(custMult) = multColumns
   
-  print(custMult)
+
+
   
   if (addMiss == T & writeRes == T) {
-    write.csv(ShanCorAll, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, "_addMiss_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVax_2_All, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, "_addMiss_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVax, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, "_addMissv_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVarAll, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, "_addMiss_2023-12-20.csv"),  row.names = F)
     
-    write.csv(fullMult, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_StepMultivar_Freq_1-", minFreq, "_addMiss_2023-12-20.csv"), row.names = T)
-    write.csv(custMult, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_addMiss_2023-12-20.csv"), row.names = T)
+    write.csv(ShanCorAll, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, "_addMiss_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVax_2_All, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, "_addMiss_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVax, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, "_addMissv_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVarAll, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, "_addMiss_2023-12-28.csv"),  row.names = F)
+    
+    write.csv(fullMult, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_StepMultivar_Freq_1-", minFreq, "_addMiss_2023-12-28.csv"), row.names = T)
+    write.csv(custMult, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_addMiss_2023-12-28.csv"), row.names = T)
     
   } else if (addMiss == F & writeRes == T) {
-    write.csv(ShanCorAll, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, "_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVax_2_All, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, "_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVax, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, "_2023-12-20.csv"), row.names = F)
-    write.csv(wilcVarAll, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, "_2023-12-20.csv"),  row.names = F)
     
-    write.csv(fullMult, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_StepMultivar_Freq_1-", minFreq, "_2023-12-20.csv"), row.names = T)
-    write.csv(custMult, paste0("Paper/Tables/VaxDose_0-2/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_2023-12-20.csv"), row.names = T)
+    write.csv(ShanCorAll, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Spearman_Freq_1-",minFreq, "_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVax_2_All, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_Vax_Freq_1-",minFreq, "_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVax, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_VaxGroups_Freq_1-", minFreq, "_2023-12-28.csv"), row.names = F)
+    write.csv(wilcVarAll, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Wilcox_WHO_Freq_1-", minFreq, "_2023-12-28.csv"),  row.names = F)
     
+    write.csv(fullMult, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_StepMultivar_Freq_1-", minFreq, "_2023-12-28.csv"), row.names = T)
+    write.csv(custMult, paste0("Paper/Tables/Impute/Oversamp/Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_2023-12-28.csv"), row.names = T)
+    
+    #write.csv(custMult, paste0("Paper/Tables/Impute/VaxDose_0-2_Shannon_MeanOverlap_GenLenAdj_Multivar_Freq_1-", minFreq, "_2023-12-22.csv"), row.names = T)
   }
   return(combShannon)
 }
 
-dir.create("Paper/Tables/VaxDose_0-2/")
+dir.create("Paper/Tables/Impute/Oversamp/", showWarnings = F)
 
-#shanInd = makeAllTables(minFreq=0.01, addMiss=F, writeRes = T)
-# shanInd = makeAllTables(minFreq=0, addMiss=F, writeRes = T)
+shanInd = makeAllTables(minFreq=0.01, addMiss=F, writeRes = T)
+#shanInd = makeAllTables(minFreq=0, addMiss=F, writeRes = T)
 
 
 #shanInd = makeAllTables(minFreq=0, addMiss=T, writeRes = T)
-shanInd = makeAllTables(minFreq=0.01, addMiss=T, writeRes = F)
+shanInd = makeAllTables(minFreq=0.01, addMiss=T, writeRes = T)
 
 
 shanInd = shanInd[!is.na(shanInd$AP_lab_id),]
 
-#write.csv(shanInd, "Paper/Tables/VaxDose_0-2/ShannInd_MeanOverlap_GenLenAdj_Freq_1-0.01_2023-12-20.csv", row.names = F)
+write.csv(shanInd, "Paper/Tables/Impute/Oversamp/ShannInd_MeanOverlap_GenLenAdj_Freq_1-0.01_2023-12-28.csv", row.names = F)
 
 system("aws s3 sync Paper/Tables/ s3://abombin/ARVAR/iSNVs/Paper/Tables/")
-
-varSel = shanInd[shanInd$WHO_variant == "Delta" | shanInd$WHO_variant == "Omicron",]
-custMod = lm(NormShan~Protocol+meandepth + Ct_value + WHO_variant+Vaccinated + days_post_symptom_onset , data = varSel) 
-custMod = lm(NormShan~Protocol+meandepth + Ct_value  + WHO_variant+Vaccinated , data = varSel) 
-custMult = summary(custMod)

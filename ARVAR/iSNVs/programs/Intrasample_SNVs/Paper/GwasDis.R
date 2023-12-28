@@ -3,7 +3,10 @@ library(ordinal)
 
 setwd("/home/ubuntu/extraVol/ARVAR/iSNVs/Paper/Additional_analysis/GWAS")
 
-df = read.csv("SnvsMatMaf0.01_MinFreq0.01_Wu.csv")
+df = read.csv("SnvsMatMaf0.01_MinFreq0.01_Wu_oversamp.csv")
+
+protDat = read.csv("AmpMetaCombSnvsPostPredDedup_MinFreq0.01_Wu_oversamp.csv")
+protDat = unique(protDat[, c("Sample", "Protocol")])
 
 cols= colnames(df)
 samples = cols[4:length(cols)]
@@ -27,6 +30,10 @@ combMeta$Vaccinated[combMeta$vax_doses_received > 0]<-"Yes"
 mdsComp = read.csv("Mds_covar_Wu.csv")
 
 combMeta = plyr::join(combMeta, mdsComp, by = "Sample", type = "left", match = 'all')
+finalMeta = plyr::join(combMeta, protDat, by = "Sample", type = "left", match = 'all')
+nrow(combMeta) == nrow(finalMeta)
+
+#finalMeta  = finalMeta[finalMeta$vax_doses_received < 3,]
 
 runGwas = function(df, combMeta, adjPop) {
   # firth regression
@@ -41,9 +48,9 @@ runGwas = function(df, combMeta, adjPop) {
     testDf = testDf [!is.na(testDf$disease_severity),]
     testDf$disease_severity = as.factor(as.character(testDf$disease_severity))
     if (adjPop == T) {
-      lf <- clm(formula = disease_severity ~  X1+X2+X3+X4+X5 + Values, data =  testDf)
+      lf <- clm(formula = disease_severity ~ Protocol+ X1+X2+X3+X4+X5 + Values, data =  testDf)
     } else {
-      lf <- clm(formula = disease_severity ~ Values, data =  testDf)
+      lf <- clm(formula = disease_severity ~ Protocol + Values, data =  testDf)
     }
     sumLf = summary(lf)
     coefLf = data.frame(sumLf$coefficients)
@@ -60,8 +67,8 @@ runGwas = function(df, combMeta, adjPop) {
 
 
 
-SnvVax = runGwas(df=df, combMeta=combMeta, adjPop=F)
-SnvVaxPopAdj = runGwas(df=df, combMeta=combMeta, adjPop=T)
+SnvVax = runGwas(df=df, combMeta=finalMeta, adjPop=F)
+SnvVaxPopAdj = runGwas(df=df, combMeta=finalMeta, adjPop=T)
 SnvVaxSign = SnvVax[SnvVax$Pval < 0.05,]
 SnvVaxPopAdjSign = SnvVaxPopAdj[SnvVaxPopAdj$Pval < 0.05, ]
 
@@ -71,9 +78,9 @@ SnvVaxPopAdjSign = SnvVaxPopAdj[SnvVaxPopAdj$Pval < 0.05, ]
 # SnvVaxSign_1 = SnvVax_1[SnvVax_1$Pval < 0.05,]
 # SnvVaxPopAdjSign_1 = SnvVaxPopAdj_1[SnvVaxPopAdj_1$Pval < 0.05, ]
 
-dir.create("Results/")
-write.csv(SnvVaxSign, "Results/Snv_disease_severity_maf0.01_MinFreq0.01_Wu.csv", row.names = F)
-write.csv(SnvVaxPopAdjSign, "Results/Snv_disease_severity_PopAdjust_maf0.01_MinFreq0.01_Wu.csv", row.names = F)
+#dir.create("Results/")
+write.csv(SnvVaxSign, "Results/Snv_disease_severity_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
+write.csv(SnvVaxPopAdjSign, "Results/Snv_disease_severity_PopAdjust_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
 
 system("aws s3 sync Results/ s3://abombin/ARVAR/iSNVs/Paper/Tables/GWAS/")
 

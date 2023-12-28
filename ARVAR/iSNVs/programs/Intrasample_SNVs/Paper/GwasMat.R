@@ -1,6 +1,8 @@
+setwd("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
-ampseq = read.csv("Paper/Additional_analysis/ampseq_Wu_ConsTest_freq_1_0_Predictions.csv")
-metaseq = read.csv("Paper/Additional_analysis/metaseq_Wu_ConsTest_freq_1_0_Predictions.csv")
+
+ampseq = read.csv("Paper/Additional_analysis/ampseq_Wu_ConsTest_freq_1_0_Predictions_oversamp.csv")
+metaseq = read.csv("Paper/Additional_analysis/metaseq_Wu_ConsTest_freq_1_0_Predictions_oversamp.csv")
 
 metaseqRef = read.csv("Paper/metaseqWu_derep_decont_v3.csv")
 metaseqRef = metaseqRef[metaseqRef$coverage >= 97,]
@@ -64,12 +66,13 @@ mean(sumFreq$Freq)
 median(sumFreq$Freq)
 
 
-makeSNVsMatrix = function(df, maf, sumFreq) {
+makeSNVsMatrix = function(df, minMaf, maxMaf, sumFreq) {
   df$Sample = gsub("-", "_", df$Sample)
   nSamples = length(unique(df$Sample))
   samplesList = unique(df$Sample)
-  mafTr = maf * nSamples
-  selSnvs = sumFreq$Var1[sumFreq$Freq >= mafTr]
+  minMafTr = minMaf * nSamples
+  maxMafTr = maxMaf * nSamples
+  selSnvs = sumFreq$Var1[sumFreq$Freq >= minMafTr & sumFreq$Freq <= maxMafTr]
   allSnvsDat = data.frame()
   for (curSnv in selSnvs) {
     snvDf = df[df$Pos_Ref_Var == curSnv,]
@@ -96,10 +99,10 @@ makeSNVsMatrix = function(df, maf, sumFreq) {
   return(allSnvsDat)
 }
 
-snvsMat = makeSNVsMatrix(df=combSNVs, maf = 0.01, sumFreq=sumFreq)
+snvsMat = makeSNVsMatrix(df=combSNVs, minMaf = 0.01, maxMaf=0.98, sumFreq=sumFreq)
 
-write.csv(snvsMat, "Paper/Additional_analysis/GWAS/SnvsMatMaf0.01_MinFreq0.01_Wu.csv", row.names = F)
-write.csv(combSNVs, "Paper/Additional_analysis/GWAS/AmpMetaCombSnvsPostPredDedup_MinFreq0.01_Wu.csv", row.names = F)
+write.csv(snvsMat, "Paper/Additional_analysis/GWAS/SnvsMatMaf0.01_MinFreq0.01_Wu_oversamp.csv", row.names = F)
+write.csv(combSNVs, "Paper/Additional_analysis/GWAS/AmpMetaCombSnvsPostPredDedup_MinFreq0.01_Wu_oversamp.csv", row.names = F)
 
 # check that records are correct
 snvsMat[1, 1:3]

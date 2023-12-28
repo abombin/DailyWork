@@ -35,8 +35,6 @@ finalMeta = plyr::join(combMeta, protDat, by = "Sample", type = "left", match = 
 
 nrow(combMeta) == nrow(finalMeta)
 
-#finalMeta  = finalMeta[finalMeta$vax_doses_received < 3,]
-
 runGwas = function(df, combMeta, adjPop) {
   # firth regression
   combDat = data.frame()
@@ -47,11 +45,11 @@ runGwas = function(df, combMeta, adjPop) {
     curVals$Sample = rownames(curVals)
     curVals$Sample = gsub("_", "-", curVals$Sample)
     testDf = plyr::join(curVals, combMeta, by = "Sample", type = "left", match = 'all')
-    testDf =  testDf[!is.na(testDf$Vaccinated),]
+    testDf = testDf [!is.na(testDf$vax_doses_received),]
     if (adjPop == T) {
-      lf <- logistf(formula = Values ~ Protocol + X1+X2+X3+X4+X5 + Vaccinated, data =  testDf)
+      lf <- logistf(formula = Values ~ Protocol + X1+X2+X3+X4+X5 + vax_doses_received, data =  testDf)
     } else {
-      lf <- logistf(formula = Values ~ Protocol + Vaccinated, data =  testDf)
+      lf <- logistf(formula = Values ~ Protocol + vax_doses_received, data =  testDf)
     }
     sumLf = summary(lf)
     coefLf = data.frame(cbind(sumLf$coefficients, sumLf$prob))
@@ -59,7 +57,7 @@ runGwas = function(df, combMeta, adjPop) {
     colnames(coefLf) = c("Coef", "Pval")
     coefLf$Pos_Ref_Var = curSNV
     coefLf$Vars = rownames(coefLf)
-    coefLf = coefLf[coefLf$Vars == "VaccinatedYes",]
+    coefLf = coefLf[coefLf$Vars == "vax_doses_received",]
     combDat = rbind(combDat, coefLf)
   }
   combDat$bonf_p = p.adjust(combDat$Pval, method = "bonferroni")
@@ -67,34 +65,6 @@ runGwas = function(df, combMeta, adjPop) {
   return(combDat)
 }
 
-runGwasLog = function(df, combMeta, adjPop) {
-  # firth regression
-  combDat = data.frame()
-  for ( i in 1:nrow(df) ) {
-    curSNV = paste(df$POSITION[i], df$REF.NT[i], df$VAR.NT[i], sep = "__")
-    curVals = data.frame(t(df[i, 4:ncol(df)]))
-    colnames(curVals) = "Values"
-    curVals$Sample = rownames(curVals)
-    curVals$Sample = gsub("_", "-", curVals$Sample)
-    testDf = plyr::join(curVals, combMeta, by = "Sample", type = "left", match = 'all')
-     testDf = testDf [!is.na(testDf$vax_doses_received),]
-    if (adjPop == T) {
-      lf <- glm(formula = Values ~ Vaccinated + X1+X2+X3+X4+X5, data =  testDf, family = binomial)
-    } else {
-      lf = glm(Values ~ Vaccinated, data =  testDf, family = binomial)
-    }
-    sumLf = summary(lf)
-    coefLf = data.frame(sumLf$coefficients)
-    colnames(coefLf)[4] = "Pval"
-    coefLf$Pos_Ref_Var = curSNV
-    coefLf$Vars = rownames(coefLf)
-    coefLf = coefLf[coefLf$Vars == "VaccinatedYes",]
-    combDat = rbind(combDat, coefLf)
-  }
-  combDat$bonf_p = p.adjust(combDat$Pval, method = "bonferroni")
-  combDat$fdr_p = p.adjust(combDat$Pval, method = "fdr")
-  return(combDat)
-}
 
 
 SnvVax = runGwas(df=df, combMeta=finalMeta, adjPop=F)
@@ -109,7 +79,7 @@ SnvVaxPopAdjSign = SnvVaxPopAdj[SnvVaxPopAdj$Pval < 0.05, ]
 # SnvVaxPopAdjSign_1 = SnvVaxPopAdj_1[SnvVaxPopAdj_1$Pval < 0.05, ]
 
 dir.create("Results/")
-write.csv(SnvVaxSign, "Results/SnvVax_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
-write.csv(SnvVaxPopAdjSign, "Results/SnvVax_PopAdjust_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
+write.csv(SnvVaxSign, "Results/SnvVax_Doses_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
+write.csv(SnvVaxPopAdjSign, "Results/SnvVax_Doses_PopAdjust_maf0.01_MinFreq0.01_Wu_2023-12-28_oversamp.csv", row.names = F)
 
 system("aws s3 sync Results/ s3://abombin/ARVAR/iSNVs/Paper/Tables/GWAS/")
