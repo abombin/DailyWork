@@ -48,14 +48,14 @@ prepFastqs = function(curPath) {
   sampleName = gsub(".sorted.bam", "", sampleName)
   targDir = paste0("IntraSnv_metaseq_all/", sampleName, "/")
   dir.create(targDir, recursive = T, showWarnings = F)
-  #cmd_str = paste0("samtools view -b -F 4 ", curPath, " | hisat2 -x references/MN908947.3 -U - -S - | samtools view -b -o ", targDir, "output.bam -")
-  #cmd_str = paste0("samtools view -h -F 4 ", curPath, " > ", targDir, "aligned_reads.sam")
+  cmd_str = paste0("samtools view -b -F 4 ", curPath, " | hisat2 -x references/MN908947.3 -U - -S - | samtools view -b -o ", targDir, "output.bam -")
+  cmd_str = paste0("samtools view -h -F 4 ", curPath, " > ", targDir, "aligned_reads.sam")
   cmd_str = paste0("samtools view -b -F 4 ", curPath, " | bedtools bamtofastq -i - -fq ", targDir, "output.fastq")
   system(cmd_str)
-  # align_str = paste0("hisat2 -x references/MN908947.3 -U ", targDir, "output.fastq -S ", targDir, "output.sam")
-  # system(align_str)
-  # bam_str = paste0("samtools view -bu -F 4 ", targDir, "output.sam -o - | samtools sort - -o ", targDir, "output.bam")
-  # system(bam_str)
+  align_str = paste0("hisat2 -x references/MN908947.3 -U ", targDir, "output.fastq -S ", targDir, "output.sam")
+  system(align_str)
+  bam_str = paste0("samtools view -bu -F 4 ", targDir, "output.sam -o - | samtools sort - -o ", targDir, "output.bam")
+  system(bam_str)
   
 }
 
@@ -82,9 +82,9 @@ prepRefs = function(curPath) {
   align_str = paste0("hisat2 -p 4 -x ", targDir, "reference -U ", targDir, "output.fastq -S ", targDir, "output.sam")
   system(align_str)
   bam_str = paste0("samtools view -bu -F 4 ", targDir, "output.sam -o - | samtools sort - -o ", targDir, "output.bam")
-  #system(bam_str)
+  system(bam_str)
   ind_str = paste0("samtools index ", targDir, "output.bam")
-  #system(ind_str)
+  system(ind_str)
   file.remove("output.fastq")
 }
 

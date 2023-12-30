@@ -4,18 +4,19 @@ from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import os
 from sklearn.metrics import confusion_matrix, roc_auc_score
+from imblearn.over_sampling import SMOTE
 
 # redo the predictions with a filter for coverage
 
 os.chdir("/home/ubuntu/extraVol/ARVAR/iSNVs")
 
-curPath = 'Paper/Additional_analysis/ampseqWu_ConsTest_freq_1_0.csv'
-predPath = 'Paper/ampseqWu_derep_v3.csv'
-outPath = 'Paper/Additional_analysis/ampseq_Wu_ConsTest_freq_1_0_Predictions.csv'
+#curPath = 'Paper/Additional_analysis/ampseqWu_ConsTest_freq_1_0.csv'
+#predPath = 'Paper/ampseqWu_derep_v3.csv'
+#outPath = 'Paper/Additional_analysis/ampseq_Wu_ConsTest_freq_1_0_Predictions_oversamp.csv'
 
-# curPath = 'Paper/Additional_analysis/metaseqWu_ConsTest_freq_1_0.csv'
-# predPath = 'Paper/metaseqWu_derep_decont_v3.csv'
-# outPath = 'Paper/Additional_analysis/metaseq_Wu_ConsTest_freq_1_0_Predictions.csv'
+curPath = 'Paper/Additional_analysis/metaseqWu_ConsTest_freq_1_0.csv'
+predPath = 'Paper/metaseqWu_derep_decont_v3.csv'
+outPath = 'Paper/Additional_analysis/metaseq_Wu_ConsTest_freq_1_0_Predictions_oversamp.csv'
 
 
 def getFiltDf(curPath):
@@ -129,6 +130,10 @@ def SumPredictPerSamp(df, minFreq, maxFreq):
 
 X_train_balanced, y_train_balanced = getBalancedTrain(X_train, y_train)
 
+# Apply SMOTE to the training dataset
+smote = SMOTE(random_state=42)
+X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+
 # Create and fit the Random Forest model on the balanced training dataset
 model = RandomForestClassifier(
     criterion='gini',
@@ -142,7 +147,7 @@ model = RandomForestClassifier(
 )
 
 # redo classification with  balanced complete dataset
-model.fit(X_train, y_train)
+model.fit(X_train_resampled, y_train_resampled)
 y_pred = model.predict(X_test)
 predDfFilt["ConsTest"] = y_pred
 
