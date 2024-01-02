@@ -84,6 +84,9 @@ p= ggplot(combDat, aes(x=Method, y=LogP, fill = Method)) +
   ) +
   geom_hline(yintercept = 0.263, linetype = "dashed", color = "blue", linewidth = 1.1)
 
+dir.create("Paper_figs/TasksList/P26/", recursive = T, showWarnings = F)
+ggsave(file = "Paper_figs/TasksList/P26/Boxp_RNA_ATAC_Cor_Pval_2024-01-02_Log.png", plot = p, height = 10, width = 12, units = "in", dpi = 300)
+
 p = p + facet_grid(cols = vars(Cluster))  + theme(axis.text.y = element_text(size = 12))
 
 ggsave(file = "Paper_figs/Fig1/Boxp_RNA_ATAC_Cor_Pval_2023-12-12_Log.png", plot = p, height = 10, width = 22, units = "in", dpi = 300)

@@ -4,13 +4,25 @@ library(monocle3)
 
 targDir <- 'OPC_ODC/Monocle3/86PC/'
 
-rnaDat = readRDS('integ_OPC_ODC')
-rnaDat  = ScaleData(rnaDat)
+rnaDat = RNA.combined.norm<-readRDS('OpcOdc_PredExpr')
+rnaDat$Cells_Names = colnames(rnaDat)
+rnaDat = ScaleData(rnaDat)
 
-genes = read.csv(paste0(targDir,'OPC_ODC_MonocClust_86PC_top100G_TimeCor_2023-02-27.csv'))
+refDat = readRDS('integ_OPC_ODC')
+refDat$Cells_Names = colnames(refDat)
+refFilt = subset(refDat, subset = Cells_Names %in% rnaDat$Cells_Names)
 
-genes$fdr_p = p.adjust(genes$p_value)
+identical(refFilt$Cells_Names, rnaDat$Cells_Names)
 
+rnaDat$MonocClust = refFilt$MonocClust
+
+# get time 
+cds<-readRDS('OpcOdc_PredExpr_Monoc3')
+timeDf = data.frame(cds$monocle3_pseudotime)
+timeDf$Cells = colnames(cds)
+colnames(timeDf)[1] = "PsedTime"
+
+genes = read.csv(paste0(targDir,'OPC_ODC_MonocClust_86PC_TimeCor_ATAC_2023-12-15.csv'))
 genes = genes[order(genes$estimate, decreasing = T),]
 
 genesFilt = unique(genes$gene_id[genes$q_value < 0.05])
@@ -37,6 +49,7 @@ Idents(rnaDat) = rnaDat$newMonocClust
 
 levels(x =rnaDat) <- c('OPC', 'Intermideate', 'ODC')
 
+
 curPlot = DoHeatmap(rnaDat,  features = genesFilt, size = 10)  +
   theme(text = element_text(size = 24)) +
   #guides(color="none") +
@@ -50,21 +63,7 @@ curPlot
 targDir = './Paper_figs/Fig3/'
 
 topN = "AllSign"
-typeGenes = "RNA_Linear"
-png(filename = paste0(targDir,"TimeExpression_Heatmap_", topN, "_", typeGenes, "_2023-12-19.png"), width = 22, height = 22, units = "in", res = 300)
-print(curPlot )
-dev.off()
-
-
-curPlot<-DoHeatmap(rnaDat, features = genesFilt,  label = F)+
-  theme(text = element_text(size = 24)) +
-  #guides(color="none") +
-  theme(legend.text = element_text(size = 24)) +
-  theme(axis.text.y = element_text(size = 1)) +
-  theme(legend.title = element_text(size = 24))
-
-topN = "AllSign"
-typeGenes = "RNA_Linear"
-png(filename = paste0(targDir,"TimeExpression_Heatmap_Legend_", topN, "_", typeGenes, "_2023-12-19.png"), width = 22, height = 22, units = "in", res = 300)
+typeGenes = "ATAC_Linear"
+png(filename = paste0(targDir,"TimeExpression_Heatmap_Legend_", topN, "_", typeGenes, "_2023-12-22.png"), width = 22, height = 22, units = "in", res = 300)
 print(curPlot )
 dev.off()
