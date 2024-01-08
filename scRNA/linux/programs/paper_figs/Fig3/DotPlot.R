@@ -57,10 +57,10 @@ makePlot<-function(x, genesSet, proj) {
     scale_colour_gradient2(low = "blue", mid = "grey", high = "red")+
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
     theme(text = element_text(size = 24))+ # all text elements size
-    theme(axis.text = element_text(size = 24))  # axes text size
+    theme(axis.text = element_text(size = 24)) 
   #scale_y_discrete(limits=rev)
   
-  ggsave(paste0(targDir,'DotPlot', genesSet, curDate, '.jpeg'), plot =  dotPlot, height = 12, width = 24, units = 'in', dpi = 300)
+  ggsave(paste0(targDir,'DotPlot', genesSet, '2023-12-14.jpeg'), plot =  dotPlot, height = 6, width = 20, units = 'in', dpi = 300)
 }
 
 makePlot(x = topMark, genesSet = "_Top10PosMarkers_", proj = RNA.combined.norm)

@@ -79,13 +79,14 @@ addPCat<-function(dataTab, pcol, newCol){
   return(dataTab)
 }
 
-keggComplete<-addPCat(dataTab=keggComplete, pcol = "p.adjust", newCol = "P_Adjust")
+#keggComplete<-addPCat(dataTab=keggComplete, pcol = "p.adjust", newCol = "P_Adjust")
+keggComplete<-addPCat(dataTab=keggComplete, pcol = "pvalue", newCol = "P.val")
 
 keggComplete$Cluster = factor(keggComplete$Cluster, levels =  c('CA1', 'CA2', 'CA3', 'DG', 'GABA', 'ODC', 'OPC', 'MG', 'C-R', 'SUB'))
 
 keggComplete$Description = gsub(" - Mus musculus \\(house mouse\\)", "", keggComplete$Description)
 
-curHeatMap = ggplot(keggComplete, aes(y=Description, x=Cluster, fill=P_Adjust))+
+curHeatMap = ggplot(keggComplete, aes(y=Description, x=Cluster, fill=P.val))+
   geom_tile() +
   theme_classic() +
   scale_fill_viridis(discrete=T ) +
@@ -101,6 +102,6 @@ targDir = "Paper_figs/Fig2/Heatmap/"
 
 topN = "5"
 typeGenes = "Negative"
-png(filename = paste0(targDir,"ClustProf_Top_", topN, "_", typeGenes, "_Genes_2023-11-20.png"), width = 22, height = 16, units = "in", res = 300)
+png(filename = paste0(targDir,"ClustProf_Top_", topN, "_", typeGenes, "_GenesUnadjP_2023-12-07.jpeg"), width = 22, height = 16, units = "in", res = 300)
 print(curHeatMap)
 dev.off()
