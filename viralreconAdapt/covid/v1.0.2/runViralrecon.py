@@ -29,7 +29,7 @@ def runViralrecon(inputList, trim, protocol):
                 -with-docker nfcore/virarecon"
         subprocess.run(cmd_str, shell=True)
 
-
+# run function
 runViralrecon(inputList, trim=0, protocol="amplicon")
 
 # make a function abvoe modular via splitting command string to substrins and then use " ".join([])

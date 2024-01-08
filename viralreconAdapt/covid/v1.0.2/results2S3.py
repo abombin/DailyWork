@@ -2,15 +2,17 @@ import subprocess
 import os
 import glob
 
+# extract project name and run name from the hierarchal directory organization
 fullDir = os.getcwd()
 dirList = fullDir.split('/')
 run_name = dirList[6] + "/"
 proj_name = dirList[5] + "/"
 
-
+# find directories with output
 outputFiles = glob.glob("*output*")
 outputFiles.append("all_summaries")
 
+# transfer outputs to S3
 def toS3():
   for i in outputFiles:
     curDir = i + "/"

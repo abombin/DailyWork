@@ -3,7 +3,6 @@ import glob
 import shutil
 import os
 
-
 suffix = "_001"
 
 # get names of the sampels from the input folder
